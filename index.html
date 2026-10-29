@@ -1,0 +1,2055 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>진술서 탐정</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Black+Han+Sans&family=Special+Elite&family=Courier+Prime:wght@400;700&family=Nunito:wght@700;800;900&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 레이아웃: 비 오는 밤의 수사 게임.
+   조사 화면 = 왼쪽 코르크 증거 보드 + 오른쪽 심문실(캐릭터 + 말풍선) + 아래 OBJECTION 바(나비 경감 도우미).
+   일부러 어두운 누아르 한 가지 테마로만 디자인했다. */
+:root{
+  --night:#0d111d; --night-2:#161b2b; --panel:#1e2436; --panel-2:#272e44; --line:#3b4460;
+  --fg:#f2ede3; --fg-dim:#aab1c4;
+  --paper:#f4ebd4; --paper-2:#e4d6b6; --ink:#211c15; --ink-dim:#6b604d;
+  --red:#e5473b; --red-deep:#9c261e; --gold:#f5c443; --gold-deep:#a87a10;
+  --hl-a:#ffd84d; --hl-a-edge:#a07c00; --hl-b:#86c8ff; --hl-b-edge:#2a64ad;
+  --green:#5fd193; --cork:#b4875a; --wood:#5a3a22; --wall:#24333a;
+  --f-punch:"Bungee","Black Han Sans",Impact,sans-serif;
+  --f-kpunch:"Black Han Sans","Bungee",sans-serif;
+  --f-type:"Special Elite","Courier New",monospace;
+  --f-doc:"Courier Prime","Courier New",monospace;
+  --f-speech:"Nunito","IBM Plex Sans KR",system-ui,sans-serif;
+  --f-ui:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --fs-doc:clamp(18px, 0.95rem + 0.4vw, 25px);
+  --fs-ui:clamp(15px, 0.85rem + 0.2vw, 19px);
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  margin:0; font-family:var(--f-ui); font-size:var(--fs-ui); line-height:1.55; color:var(--fg);
+  background:var(--night);
+  background-image:radial-gradient(ellipse 80% 60% at 50% -10%, #23305a 0%, transparent 70%);
+  background-attachment:fixed; overflow-x:hidden;
+}
+#app{
+  position:relative; z-index:1; max-width:1480px; margin:0 auto;
+  padding-block:14px 24px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+h1,h2,h3{margin:0; text-wrap:balance; line-height:1.2}
+p{margin:0}
+button{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--hl-b); outline-offset:2px}
+svg{display:block}
+
+/* ---------- 공용 버튼 (눌리는 느낌) ---------- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:.45em; cursor:pointer;
+  min-height:48px; padding:.5em 1.2em; border-radius:12px; border:0; font-weight:700;
+  background:var(--panel-2); color:var(--fg); box-shadow:0 5px 0 #0a0d16;
+  transition:transform .08s, box-shadow .08s, filter .15s;
+}
+.btn:hover:not(:disabled){transform:translateY(-2px); box-shadow:0 7px 0 #0a0d16; filter:brightness(1.08)}
+.btn:active:not(:disabled){transform:translateY(4px) scale(.97); box-shadow:0 1px 0 #0a0d16}
+.btn:disabled{opacity:.4; cursor:not-allowed; filter:grayscale(.6)}
+.btn.primary{background:var(--gold); color:#2a1d00; box-shadow:0 5px 0 var(--gold-deep)}
+.btn.primary:hover:not(:disabled){box-shadow:0 7px 0 var(--gold-deep)}
+.btn.primary:active:not(:disabled){box-shadow:0 1px 0 var(--gold-deep)}
+.btn.big{font-size:1.25em; min-height:60px; padding:.4em 1.6em; font-family:var(--f-kpunch); font-weight:400; letter-spacing:.02em}
+.btn.objection{
+  font-family:var(--f-punch); font-weight:400; font-size:clamp(20px, 1rem + 1vw, 30px); letter-spacing:.02em;
+  background:var(--red); color:#fff; box-shadow:0 6px 0 var(--red-deep); padding:.25em 1em; text-shadow:2px 2px 0 rgba(0,0,0,.3);
+}
+.btn.objection:hover:not(:disabled){box-shadow:0 8px 0 var(--red-deep)}
+.btn.objection:active:not(:disabled){box-shadow:0 1px 0 var(--red-deep)}
+.btn.objection.ready{animation:readyPulse 1.1s ease-in-out infinite}
+@keyframes readyPulse{0%,100%{filter:none; transform:scale(1)} 50%{filter:brightness(1.18) drop-shadow(0 0 14px rgba(229,71,59,.8)); transform:scale(1.05)}}
+.ibtn{
+  display:inline-flex; align-items:center; gap:.4em; cursor:pointer; min-height:42px; padding:.3em .8em;
+  border-radius:10px; border:1.5px solid var(--line); background:var(--night-2); color:var(--fg); font-weight:500; font-size:.92em;
+  transition:transform .08s, border-color .15s;
+}
+.ibtn:hover:not(:disabled){border-color:var(--fg-dim); transform:translateY(-1px)}
+.ibtn:active:not(:disabled){transform:scale(.94)}
+.ibtn:disabled{opacity:.4; cursor:not-allowed}
+.ibtn svg{width:1.2em; height:1.2em}
+.ibtn .count{background:var(--gold); color:#2a1d00; border-radius:999px; min-width:1.5em; text-align:center; font-size:.85em; padding:0 .3em}
+.row{display:flex; flex-wrap:wrap; gap:12px; align-items:center}
+.gl{border-bottom:2px dotted var(--red); position:relative; cursor:help}
+.gl:hover::after,.gl:focus::after{
+  content:attr(data-tip); position:absolute; left:0; bottom:calc(100% + 6px); z-index:5;
+  background:var(--ink); color:var(--paper); font-family:var(--f-ui); font-size:14px; font-weight:500;
+  padding:.25em .6em; border-radius:6px; white-space:nowrap; pointer-events:none;
+}
+
+/* ---------- 캐릭터 애니메이션 ---------- */
+.pt .eyes{transform-box:fill-box; transform-origin:center; animation:blink 4.2s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)} 95%{transform:scaleY(.1)}}
+.pt .sweat{animation:drip 1.4s ease-in infinite}
+.pt .sweat:nth-of-type(2){animation-delay:.5s}
+.pt .sweat:nth-of-type(3){animation-delay:.9s}
+@keyframes drip{0%{transform:translateY(-4px); opacity:0} 25%{opacity:1} 100%{transform:translateY(16px); opacity:0}}
+.breathe{animation:breathe 3.4s ease-in-out infinite; transform-origin:50% 100%}
+@keyframes breathe{50%{transform:scaleY(1.015) translateY(-1px)}}
+.tremble{animation:tremble .18s linear infinite}
+@keyframes tremble{25%{transform:translateX(-1.5px)} 75%{transform:translateX(1.5px)}}
+.hop{animation:hop .4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes hop{0%{transform:translateY(0)} 40%{transform:translateY(-12px)} 100%{transform:translateY(0)}}
+.jolt{animation:jolt .5s}
+@keyframes jolt{0%{transform:scale(1)} 15%{transform:scale(1.12) rotate(-3deg)} 30%{transform:translateX(-10px) rotate(2deg)} 45%{transform:translateX(9px)} 60%{transform:translateX(-6px)} 100%{transform:none}}
+
+/* ---------- 타이틀 ---------- */
+.scene-bg{position:absolute; inset:0; z-index:0; overflow:hidden; border-radius:inherit}
+.scene-bg svg{width:100%; height:100%}
+#s-title{position:relative; min-height:calc(100vh - 40px); border-radius:18px; overflow:hidden; display:grid; align-items:center}
+.title-inner{position:relative; z-index:2; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:clamp(18px,3vw,48px); align-items:center; padding:clamp(20px,4vw,56px)}
+.secret{display:inline-block; font-family:var(--f-type); color:var(--red); border:3px solid var(--red); padding:0 .5em; transform:rotate(-4deg); letter-spacing:.15em; font-size:.9em; animation:stampIn .4s .9s both}
+.title-big{font-family:var(--f-kpunch); font-weight:400; font-size:clamp(56px, 9vw, 140px); line-height:1; margin:.15em 0 .05em; color:#fff; text-shadow:0 6px 0 var(--red-deep), 0 0 40px rgba(229,71,59,.35)}
+.title-big span{display:inline-block; animation:dropIn .6s cubic-bezier(.3,1.5,.5,1) both; animation-delay:calc(var(--i) * 90ms + 150ms)}
+@keyframes dropIn{from{transform:translateY(-120px) rotate(-12deg); opacity:0} to{transform:none; opacity:1}}
+.title-en{font-family:var(--f-punch); letter-spacing:.08em; color:var(--gold); font-size:clamp(15px, .7rem + .9vw, 28px)}
+.title-lede{max-width:30em; color:var(--fg-dim); margin-top:1em}
+.title-lede b{color:var(--fg)}
+.title-card{background:rgba(22,27,43,.88); border:1.5px solid var(--line); border-radius:18px; padding:clamp(18px,2.5vw,30px); display:grid; gap:14px; backdrop-filter:blur(6px)}
+.title-card h2{font-family:var(--f-type); font-weight:400; color:var(--gold); font-size:clamp(20px, 1rem + .9vw, 30px)}
+.lineup-sil{display:flex; justify-content:center; gap:4px; margin-bottom:-6px}
+.lineup-sil .sil{width:22%; max-width:90px; filter:brightness(0) drop-shadow(0 0 1px rgba(255,255,255,.35)); position:relative; animation:bob 3s ease-in-out infinite; animation-delay:calc(var(--i)*.3s)}
+@keyframes bob{50%{transform:translateY(-4px)}}
+.sil-wrap{position:relative}
+.sil-q{position:absolute; inset:0; display:grid; place-items:center; font-family:var(--f-punch); color:var(--gold); font-size:clamp(20px,2vw,30px); padding-bottom:20%}
+.field{display:grid; gap:6px}
+.field label{font-weight:700; font-size:.9em}
+.field input{font:inherit; padding:.6em .9em; border:1.5px solid var(--line); border-radius:10px; background:var(--night); color:var(--fg); min-height:48px}
+.nabi-peek{display:flex; align-items:flex-end; gap:10px}
+.nabi-peek .face{width:84px; flex:none}
+.say{position:relative; background:#fff; color:#1a1712; border-radius:16px; padding:.55em .9em; font-family:var(--f-speech); font-weight:800; font-size:.95em}
+.say::before{content:""; position:absolute; left:-9px; bottom:14px; border:9px solid transparent; border-right-color:#fff; border-left:0}
+
+/* ---------- 스토리 (비주얼 노벨) ---------- */
+#s-story .scene{position:relative; min-height:calc(100vh - 40px); border-radius:18px; overflow:hidden; display:grid; grid-template-rows:1fr auto; cursor:pointer}
+.vn-stage{position:relative; z-index:2; display:flex; align-items:flex-end; justify-content:center; padding:20px 20px 0; min-height:300px}
+.vn-nabi{width:clamp(170px, 24vw, 300px)}
+.intro{display:flex; align-items:flex-end; gap:clamp(10px,3vw,40px); width:100%; max-width:1000px; justify-content:center}
+.intro-face{width:clamp(180px, 26vw, 330px); animation:slideL .5s cubic-bezier(.2,1.3,.4,1) both}
+.intro-txt{padding-bottom:40px; animation:slideR .5s .1s cubic-bezier(.2,1.3,.4,1) both; min-width:0}
+.intro-no{font-family:var(--f-punch); font-size:clamp(16px,1.5vw,22px); color:var(--gold); letter-spacing:.1em}
+.intro-name{font-family:var(--f-punch); font-size:clamp(34px, 5vw, 76px); line-height:1; color:#fff; text-shadow:4px 4px 0 var(--red-deep)}
+.intro-role{display:inline-block; margin-top:.5em; background:var(--paper); color:var(--ink); font-family:var(--f-type); padding:.15em .7em; transform:rotate(-2deg)}
+@keyframes slideL{from{transform:translateX(-60vw)} to{transform:none}}
+@keyframes slideR{from{transform:translateX(60vw); opacity:0} to{transform:none; opacity:1}}
+.vn-box{
+  position:relative; z-index:3; margin:0 clamp(10px,2vw,28px) clamp(10px,2vw,28px); padding:22px clamp(16px,2.4vw,30px) 26px;
+  background:rgba(14,18,30,.94); border:3px solid var(--fg); border-radius:16px; box-shadow:0 0 0 4px var(--night), 0 10px 40px rgba(0,0,0,.6);
+}
+.vn-name{position:absolute; top:-20px; left:22px; background:var(--gold); color:#2a1d00; font-family:var(--f-kpunch); padding:.1em .9em; border-radius:8px; font-size:1.05em; box-shadow:0 3px 0 var(--gold-deep)}
+.vn-text{font-family:var(--f-speech); font-weight:700; font-size:clamp(19px, 1rem + .7vw, 30px); line-height:1.5; min-height:3em}
+.vn-text.en{font-weight:800}
+.vn-next{position:absolute; right:18px; bottom:8px; font-size:.8em; color:var(--fg-dim); animation:nudge 1s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateY(4px)}}
+.vn-skip{position:absolute; top:14px; right:14px; z-index:4}
+.vn-prog{position:absolute; top:18px; left:18px; z-index:4; display:flex; gap:5px}
+.vn-prog i{width:18px; height:5px; border-radius:3px; background:rgba(255,255,255,.2)}
+.vn-prog i.on{background:var(--gold)}
+
+/* ---------- HUD ---------- */
+#hud{
+  display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:10px 16px;
+  padding:10px 14px; margin-bottom:14px; background:rgba(22,27,43,.95); border:1.5px solid var(--line); border-radius:14px;
+}
+@media (min-width:900px){ #hud{position:sticky; top:env(safe-area-inset-top,0px); z-index:20} }
+.hud-id{display:flex; align-items:center; gap:10px; min-width:0}
+.hud-face{width:44px; height:44px; border-radius:50%; overflow:hidden; background:var(--panel-2); flex:none}
+.hud-id b{display:block; line-height:1.2}
+.hud-id span{font-family:var(--f-type); color:var(--fg-dim); font-size:.8em}
+.hud-stats{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center}
+.hearts{display:flex; gap:3px}
+.heart{width:28px; height:28px; color:var(--line); transition:color .2s}
+.heart.on{color:var(--red); filter:drop-shadow(0 2px 0 var(--red-deep))}
+.heart.breaking{animation:heartBreak .45s forwards}
+@keyframes heartBreak{0%{transform:scale(1)} 30%{transform:scale(1.5) rotate(-12deg)} 100%{transform:scale(0) rotate(40deg); opacity:0}}
+body.danger .heart.on{animation:beat .8s ease-in-out infinite}
+@keyframes beat{0%,100%{transform:scale(1)} 15%{transform:scale(1.25)} 30%{transform:scale(1)} 45%{transform:scale(1.15)}}
+.exs{display:flex; gap:6px}
+.ex{width:34px; height:40px; display:grid; place-items:center; border:2px dashed var(--line); border-radius:6px; font-family:var(--f-punch); color:var(--line); font-size:1em}
+.ex.on{background:var(--paper); border:2px solid var(--paper); color:var(--red); box-shadow:0 3px 0 var(--paper-2); transform:rotate(-4deg)}
+.ex.pop{animation:exPop .5s cubic-bezier(.3,1.8,.5,1)}
+@keyframes exPop{0%{transform:scale(.3) rotate(-30deg)} 100%{transform:scale(1) rotate(-4deg)}}
+.time{font-family:var(--f-doc); font-weight:700; font-variant-numeric:tabular-nums; font-size:1.15em; display:flex; align-items:center; gap:6px}
+.time svg{width:1em; height:1em; color:var(--fg-dim)}
+.hud-actions{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.btn.accuse{min-height:44px; background:var(--panel-2); font-family:var(--f-kpunch); font-weight:400; font-size:1.05em}
+.btn.accuse.ready{background:var(--red); color:#fff; box-shadow:0 5px 0 var(--red-deep); animation:readyPulse 1.1s ease-in-out infinite}
+
+/* ---------- 조사 화면 ---------- */
+.inv-switch{display:none; gap:8px; margin-bottom:12px}
+.inv-switch button{flex:1; justify-content:center}
+.inv-switch button[aria-selected="true"]{background:var(--fg); color:var(--night); border-color:var(--fg); font-weight:700}
+.inv-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.35fr); gap:18px; align-items:start}
+
+/* 코르크 증거 보드 */
+.board{
+  border-radius:12px; padding:16px; border:10px solid var(--wood);
+  background-color:var(--cork);
+  background-image:radial-gradient(rgba(70,40,15,.35) 1.2px, transparent 1.6px), radial-gradient(rgba(255,230,190,.18) 1px, transparent 1.4px);
+  background-size:11px 11px, 7px 7px; background-position:0 0, 3px 5px;
+  box-shadow:inset 0 0 30px rgba(40,20,5,.5), 0 12px 30px rgba(0,0,0,.45);
+}
+.board-title{display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 10px; align-items:baseline; margin-bottom:12px}
+.board-title b{font-family:var(--f-punch); font-weight:400; color:#fff; font-size:1.1em; text-shadow:2px 2px 0 rgba(0,0,0,.35)}
+.board-title span{font-size:.82em; color:#3a2512; font-weight:700; background:rgba(255,240,210,.7); padding:0 .5em; border-radius:4px}
+.notes{display:grid; gap:14px}
+.line{position:relative; width:100%; text-align:left; cursor:pointer; border:0; color:var(--ink)}
+.note{
+  display:grid; grid-template-columns:auto minmax(0,1fr); gap:.6em; align-items:baseline;
+  padding:.8em 2.4em .7em .8em; border-radius:2px; transform:rotate(var(--r,0deg));
+  background:var(--paper); background-image:repeating-linear-gradient(0deg, transparent 0 29px, rgba(70,90,140,.13) 29px 30px);
+  font-family:var(--f-doc); font-size:var(--fs-doc); line-height:1.45; box-shadow:0 6px 12px rgba(40,20,5,.4);
+  transition:transform .15s, box-shadow .15s;
+}
+.note:hover{transform:rotate(0deg) translateY(-3px) scale(1.015); box-shadow:0 12px 20px rgba(40,20,5,.45)}
+.pin{position:absolute; top:-7px; left:50%; width:16px; height:16px; border-radius:50%; background:radial-gradient(circle at 35% 35%, #ff8b80, var(--red) 55%, var(--red-deep)); box-shadow:0 3px 3px rgba(0,0,0,.4)}
+.lid{font-family:var(--f-ui); font-size:.58em; font-weight:700; color:var(--ink-dim); border:1.5px solid currentColor; border-radius:4px; padding:0 .35em; min-width:2.6em; text-align:center; transform:translateY(-.15em)}
+.line.used .lid{background:var(--red); border-color:var(--red); color:#fff}
+.line.sel-a{background-color:var(--hl-a)!important; box-shadow:0 0 0 4px var(--hl-a-edge), 0 10px 20px rgba(0,0,0,.35)!important}
+.line.sel-b{background-color:var(--hl-b)!important; box-shadow:0 0 0 4px var(--hl-b-edge), 0 10px 20px rgba(0,0,0,.35)!important}
+.line.sel-a::after,.line.sel-b::after{
+  position:absolute; right:-10px; top:-12px; width:34px; height:34px; display:grid; place-items:center; border-radius:50%;
+  font-family:var(--f-punch); font-size:16px; color:#fff; border:3px solid #fff; box-shadow:0 3px 6px rgba(0,0,0,.4);
+  animation:pinPop .35s cubic-bezier(.3,1.8,.5,1);
+}
+.line.sel-a::after{content:"A"; background:var(--hl-a-edge)}
+.line.sel-b::after{content:"B"; background:var(--hl-b-edge)}
+@keyframes pinPop{from{transform:scale(0) rotate(-90deg)} to{transform:none}}
+
+/* 심문실 */
+.room{display:grid; gap:12px; min-width:0}
+.sus-tabs{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px}
+.sus{
+  display:flex; gap:.6em; align-items:center; text-align:left; cursor:pointer; min-width:0; position:relative;
+  padding:.4em .6em; border-radius:12px; border:2px solid var(--line); background:var(--night-2);
+  transition:transform .12s, border-color .15s;
+}
+.sus:hover{transform:translateY(-2px); border-color:var(--fg-dim)}
+.sus[aria-selected="true"]{background:var(--panel-2); border-color:var(--gold); box-shadow:0 4px 0 var(--gold-deep)}
+.sus-face{width:50px; height:50px; border-radius:50%; overflow:hidden; background:var(--panel); flex:none}
+.sus-face svg{width:100%; transform:scale(1.35) translateY(9%)}
+.sus-txt{display:grid; min-width:0; line-height:1.25}
+.sus-name{font-weight:700}
+.sus-role{font-size:.76em; color:var(--fg-dim)}
+.heat{position:absolute; top:-8px; right:-6px; display:flex; gap:1px; background:#fff; border-radius:999px; padding:2px 5px; box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.heat svg{width:10px; height:13px}
+.interro{
+  position:relative; overflow:hidden; border-radius:14px; padding:18px;
+  display:grid; grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr); gap:16px; align-items:end;
+  background:linear-gradient(180deg, #2c3d44 0%, var(--wall) 60%, #1b2328 100%);
+  border:1.5px solid var(--line); min-height:420px;
+}
+.interro::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg, transparent 0 39px, rgba(255,255,255,.07) 39px 41px);
+}
+.lamp{position:absolute; top:-40px; left:20%; width:200px; height:420px; transform:translateX(-50%); pointer-events:none;
+  background:radial-gradient(ellipse 50% 70% at 50% 0%, rgba(255,226,150,.28), transparent 70%); animation:flicker 7s infinite}
+@keyframes flicker{0%,100%{opacity:1} 41%{opacity:1} 42%{opacity:.5} 43%{opacity:1} 70%{opacity:.9}}
+.who{position:relative; z-index:1; display:grid; justify-items:center; align-self:end}
+.who-face{width:100%; max-width:240px}
+.who-face.enter{animation:faceIn .45s cubic-bezier(.2,1.3,.4,1)}
+@keyframes faceIn{from{transform:translateY(60px) scale(.9); opacity:0} to{transform:none; opacity:1}}
+.nameplate{margin-top:-8px; background:var(--paper); color:var(--ink); padding:.25em .8em; border-radius:4px; text-align:center; box-shadow:0 4px 0 var(--paper-2); position:relative; z-index:2; transform:rotate(-1.5deg)}
+.nameplate b{display:block; font-family:var(--f-punch); font-weight:400; font-size:1.05em; line-height:1.2}
+.nameplate span{font-size:.78em; color:var(--ink-dim)}
+.bubbles{position:relative; z-index:1; display:grid; gap:12px; align-content:end; min-width:0}
+.bubble{
+  display:grid; grid-template-columns:auto minmax(0,1fr); gap:.6em; align-items:baseline;
+  background:#fff; border-radius:18px; padding:.7em 2.3em .7em .9em;
+  font-family:var(--f-speech); font-weight:700; font-size:var(--fs-doc); line-height:1.4;
+  box-shadow:0 5px 0 rgba(0,0,0,.25); transition:transform .12s;
+  animation:bubbleIn .4s cubic-bezier(.3,1.6,.5,1) both; animation-delay:var(--d,0ms);
+}
+.bubble::before{content:""; position:absolute; left:-10px; bottom:16px; border:10px solid transparent; border-right-color:#fff; border-left:0}
+.bubble.sel-a::before{border-right-color:var(--hl-a)} .bubble.sel-b::before{border-right-color:var(--hl-b)}
+.bubble:hover{transform:scale(1.02) translateX(3px)}
+@keyframes bubbleIn{from{transform:scale(.4) translateX(-30px); opacity:0} to{transform:none; opacity:1}}
+
+/* OBJECTION 바 */
+.objbar{
+  position:sticky; bottom:max(8px, env(safe-area-inset-bottom, 0px)); z-index:15; margin-top:16px;
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.9fr); gap:14px; align-items:center;
+  padding:10px 12px; border-radius:16px; border:1.5px solid var(--line);
+  background:rgba(22,27,43,.97); box-shadow:0 -8px 30px rgba(0,0,0,.5);
+}
+.nabi-row{display:flex; gap:10px; align-items:center; min-width:0}
+.nabi-face{width:62px; flex:none}
+.nabi-bubble{position:relative; flex:1; min-width:0; background:#fff; color:#1a1712; border-radius:14px; padding:.4em .8em; font-family:var(--f-speech); font-weight:700; font-size:.93em; line-height:1.4}
+.nabi-bubble::before{content:""; position:absolute; left:-8px; top:50%; margin-top:-8px; border:8px solid transparent; border-right-color:#fff; border-left:0}
+.nabi-bubble b{display:block; font-family:var(--f-ui); font-size:.75em; color:#a0601c}
+.obj-row{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; align-items:center; min-width:0}
+.slots{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; min-width:0}
+.slot{display:flex; gap:.5em; align-items:flex-start; min-width:0; padding:.35em .55em; border:2px dashed var(--line); border-radius:10px; font-size:.86em; color:var(--fg-dim); min-height:3.4em}
+.slot.filled{color:var(--fg); border-style:solid; animation:slotIn .3s cubic-bezier(.3,1.6,.5,1)}
+@keyframes slotIn{from{transform:scale(.85)} to{transform:none}}
+.slot.a.filled{border-color:var(--hl-a); background:rgba(255,216,77,.08)} .slot.b.filled{border-color:var(--hl-b); background:rgba(134,200,255,.08)}
+.slot-tag{flex:none; font-family:var(--f-punch); border-radius:6px; padding:0 .4em; color:var(--ink)}
+.slot.a .slot-tag{background:var(--hl-a)} .slot.b .slot-tag{background:var(--hl-b)}
+.slot-body{min-width:0}
+.slot-who{display:block; font-size:.78em; color:var(--fg-dim)}
+.slot-text{font-family:var(--f-doc); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.obj-actions{display:flex; gap:8px; align-items:center}
+
+@media (max-width:899px){
+  .title-inner{grid-template-columns:1fr}
+  .inv-switch{display:flex}
+  .inv-grid{grid-template-columns:1fr}
+  #s-inv[data-view="board"] .room{display:none}
+  #s-inv[data-view="room"] .board{display:none}
+  .objbar{grid-template-columns:1fr; gap:8px}
+  .nabi-face{width:46px}
+}
+@media (max-width:600px){
+  .interro{grid-template-columns:1fr; padding:14px 14px 16px 22px; min-height:0}
+  .who{grid-template-columns:auto 1fr; justify-items:start; align-items:end; gap:8px}
+  .who-face{width:120px}
+  .nameplate{margin-top:0}
+  .obj-row{grid-template-columns:1fr}
+  .obj-actions .btn.objection{flex:1}
+  .objbar{padding:8px; gap:6px}
+  .nabi-face{width:38px}
+  .nabi-bubble{font-size:.8em; padding:.3em .6em}
+  .nabi-bubble p{display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden}
+  .slot{min-height:0; font-size:.78em}
+  .slot-text{-webkit-line-clamp:1}
+  .lamp{left:15%}
+}
+
+/* ---------- 컷신 (OBJECTION 연출) ---------- */
+#cut{position:fixed; inset:0; z-index:70; display:grid; place-items:center; overflow:hidden; cursor:pointer}
+.cut-bg{position:absolute; inset:-60%; background:repeating-conic-gradient(from 0deg, rgba(255,216,77,.14) 0deg 7deg, transparent 7deg 15deg), radial-gradient(circle, #4a120d 0%, #0b0d14 65%); animation:spin 9s linear infinite}
+#cut.miss .cut-bg{background:repeating-conic-gradient(from 0deg, rgba(160,175,200,.08) 0deg 7deg, transparent 7deg 15deg), radial-gradient(circle, #1d2436 0%, #07090f 65%)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cut-word{position:absolute; z-index:3; font-family:var(--f-punch); font-size:clamp(46px, 11vw, 170px); color:#fff; transform:rotate(-7deg) scale(0); opacity:0;
+  text-shadow:5px 5px 0 var(--red), 10px 10px 0 #000; white-space:nowrap}
+.cut-word.slam{animation:slam .55s cubic-bezier(.2,1.6,.4,1) forwards}
+.cut-word.out{animation:wordOut .25s forwards}
+@keyframes slam{0%{transform:rotate(-7deg) scale(3.2); opacity:0} 55%{transform:rotate(-7deg) scale(.9); opacity:1} 100%{transform:rotate(-7deg) scale(1); opacity:1}}
+@keyframes wordOut{to{transform:rotate(-7deg) scale(1.6); opacity:0}}
+.cut-arena{position:relative; z-index:2; width:min(1100px, 92vw); display:grid; grid-template-columns:1fr 1fr; gap:4vw; align-items:center}
+.cut-card{background:var(--paper); color:var(--ink); padding:16px 18px; border-radius:10px; font-family:var(--f-doc); font-size:var(--fs-doc); line-height:1.4; box-shadow:0 14px 30px rgba(0,0,0,.6); opacity:0}
+.cut-card .cw{display:block; font-family:var(--f-ui); font-size:.6em; font-weight:700; color:var(--ink-dim); margin-bottom:4px}
+.cut-card .ct{display:inline-block; font-family:var(--f-punch); font-size:.7em; border-radius:6px; padding:0 .4em; margin-right:.4em; color:var(--ink)}
+.cut-card.a{border-top:10px solid var(--hl-a); transform:translateX(-110vw) rotate(-10deg)} .cut-card.a .ct{background:var(--hl-a)}
+.cut-card.b{border-top:10px solid var(--hl-b); transform:translateX(110vw) rotate(10deg)} .cut-card.b .ct{background:var(--hl-b)}
+.cut-card.in{opacity:1; transform:rotate(-2deg); transition:transform .45s cubic-bezier(.2,1.25,.4,1), opacity .15s}
+.cut-card.b.in{transform:rotate(2deg)}
+.cut-card.a.hit{animation:hitA .28s} .cut-card.b.hit{animation:hitB .28s}
+@keyframes hitA{50%{transform:translateX(3vw) rotate(1deg) scale(1.04)}}
+@keyframes hitB{50%{transform:translateX(-3vw) rotate(-1deg) scale(1.04)}}
+.cut-card.match{box-shadow:0 0 0 5px var(--red), 0 0 50px rgba(229,71,59,.8)}
+.cut-card.repel.a{transform:translateX(-4vw) rotate(-7deg); filter:grayscale(.7) brightness(.8); transition:transform .5s, filter .5s}
+.cut-card.repel.b{transform:translateX(4vw) rotate(7deg); filter:grayscale(.7) brightness(.8); transition:transform .5s, filter .5s}
+.cut-verdict{position:absolute; z-index:4; top:9vh; font-family:var(--f-punch); font-size:clamp(28px, 6vw, 84px); color:var(--red); border:6px solid currentColor; padding:0 .3em; border-radius:8px; background:rgba(0,0,0,.35); transform:rotate(-5deg) scale(0); opacity:0; white-space:nowrap}
+.cut-verdict.show{animation:stampIn .35s forwards}
+.cut-verdict.miss{color:#c6ccda}
+@keyframes stampIn{0%{transform:rotate(-5deg) scale(2.6); opacity:0} 100%{transform:rotate(-5deg) scale(1); opacity:1}}
+.cut-who{position:absolute; z-index:5; left:3vw; bottom:3vh; display:flex; align-items:flex-end; gap:6px; transform:translateY(130%); transition:transform .35s cubic-bezier(.2,1.3,.4,1)}
+.cut-who.show{transform:none}
+.cut-face{width:clamp(110px, 17vw, 220px)}
+.cut-say{position:relative; background:#fff; color:#111; font-family:var(--f-speech); font-weight:900; font-size:clamp(18px, 2.2vw, 32px); padding:.4em .8em; border-radius:18px; margin-bottom:clamp(60px,10vw,140px); white-space:nowrap}
+.cut-say::before{content:""; position:absolute; left:-12px; bottom:14px; border:12px solid transparent; border-right-color:#fff; border-left:0}
+.cut-skip{position:absolute; z-index:6; right:14px; bottom:12px; color:rgba(255,255,255,.5); font-size:.8em}
+@media (max-width:700px){
+  .cut-arena{grid-template-columns:1fr; gap:14px; margin-top:-8vh}
+  .cut-who{left:2vw; bottom:2vh}
+  .cut-say{white-space:normal; max-width:55vw}
+}
+
+/* ---------- 모달 / 증거 카드 ---------- */
+.modal{
+  position:fixed; inset:0; z-index:50; display:grid; place-items:center; overflow:auto;
+  padding:max(16px, env(safe-area-inset-top,0px)) max(16px, env(safe-area-inset-right,0px)) max(16px, env(safe-area-inset-bottom,0px)) max(16px, env(safe-area-inset-left,0px));
+  background:rgba(5,6,10,.8);
+}
+.card{
+  width:100%; max-width:680px; padding:clamp(20px,3vw,32px); position:relative; display:grid; gap:12px;
+  background:var(--paper); color:var(--ink); border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 0 6px rgba(245,196,67,.25);
+  animation:cardIn .6s cubic-bezier(.2,1.25,.35,1);
+}
+@keyframes cardIn{from{transform:translateY(80px) rotate(-12deg) scale(.6); opacity:0} to{transform:none; opacity:1}}
+.card-top{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
+.card-stamp{font-family:var(--f-punch); font-size:1.15em; color:var(--red); border:4px solid var(--red); padding:0 .45em; border-radius:6px; transform:rotate(-6deg); animation:stampIn .35s .35s both}
+.chip{background:var(--ink); color:var(--paper); font-weight:700; font-size:.82em; padding:.15em .7em; border-radius:999px}
+.card-title{font-family:var(--f-kpunch); font-weight:400; font-size:clamp(26px, 1rem + 1.6vw, 40px); color:var(--ink)}
+.q{display:grid; grid-template-columns:auto minmax(0,1fr); gap:10px; align-items:center; padding:.55em .75em; border-radius:10px; font-family:var(--f-doc); font-size:var(--fs-doc); line-height:1.4}
+.q.a{background:var(--hl-a)} .q.b{background:var(--hl-b)}
+.q-av{width:52px; height:52px; border-radius:50%; overflow:hidden; background:rgba(255,255,255,.55)}
+.q-av svg{width:100%; transform:scale(1.35) translateY(9%)}
+.q-av.file svg{transform:none; padding:8px}
+.q-who{display:block; font-family:var(--f-ui); font-size:.58em; font-weight:700; color:rgba(33,28,21,.7)}
+.vs{font-family:var(--f-punch); text-align:center; color:var(--red); margin:-4px 0; font-size:1.2em}
+.expl b{font-size:.9em}
+.gp{background:var(--ink); color:var(--paper); padding:.75em .95em; border-radius:10px}
+.gp-k{display:block; font-size:.78em; font-weight:700; color:var(--gold)}
+.fly{position:fixed; z-index:80; background:var(--paper); border:3px solid var(--red); border-radius:10px; transform-origin:0 0; pointer-events:none;
+  display:grid; place-items:center; font-family:var(--f-punch); color:var(--red); font-size:40px;
+  transition:transform .6s cubic-bezier(.5,-0.3,.6,1), opacity .6s}
+.mini{width:100%; max-width:640px; padding:clamp(20px,3vw,30px); display:grid; gap:14px; background:var(--paper); color:var(--ink); border-radius:14px}
+.mini h2{font-family:var(--f-kpunch); font-weight:400}
+.mini textarea{width:100%; min-height:280px; font-family:var(--f-doc); font-size:14px; line-height:1.4; padding:10px; border-radius:8px; border:1.5px solid var(--ink-dim); background:#fbf6e9; color:var(--ink); resize:vertical}
+.mini .ibtn{background:transparent; color:var(--ink); border-color:var(--ink-dim)}
+.mini .btn{box-shadow:0 4px 0 rgba(0,0,0,.35)}
+.err{color:var(--red-deep); font-weight:700; white-space:pre-line; font-size:.9em}
+.gloss-list{display:grid; gap:6px; margin:0; padding:0; list-style:none}
+.gloss-list li{display:flex; gap:1em; justify-content:space-between; border-bottom:1px dashed var(--ink-dim); padding-bottom:4px}
+.gloss-list b{font-family:var(--f-doc); font-size:1.1em}
+
+/* ---------- 지목 ---------- */
+.stage{max-width:1100px; margin:0 auto; display:grid; gap:18px}
+.punch{font-family:var(--f-punch); font-weight:400; font-size:clamp(34px, 1rem + 4vw, 72px); color:#fff; text-shadow:4px 4px 0 var(--red-deep)}
+.stage-head p{color:var(--fg-dim); margin-top:.3em}
+.lineup-wall{
+  position:relative; border-radius:16px; padding:28px 18px 18px; overflow:hidden;
+  background:linear-gradient(180deg, #2b343c, #1a2026);
+  border:1.5px solid var(--line);
+}
+.lineup-wall::before{content:""; position:absolute; inset:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg, transparent 0 44px, rgba(255,255,255,.12) 44px 46px)}
+.lineup{position:relative; display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px}
+.suspect-card{
+  position:relative; display:grid; justify-items:center; gap:6px; padding:10px 8px 14px; cursor:pointer; text-align:center;
+  border-radius:14px; border:2px solid transparent; background:transparent; transition:transform .15s, opacity .3s, filter .3s;
+}
+.suspect-card:hover{transform:translateY(-6px)}
+.suspect-card::before{content:""; position:absolute; inset:-20px -10px auto; height:120%; pointer-events:none; opacity:0; transition:opacity .25s;
+  background:radial-gradient(ellipse 50% 60% at 50% 0%, rgba(255,236,170,.4), transparent 70%)}
+.suspect-card:hover::before,.suspect-card.chosen::before{opacity:1}
+.suspect-card.dim{opacity:.25; filter:grayscale(1)}
+.suspect-card.chosen{transform:scale(1.06)}
+.lu-face{width:100%; max-width:190px; position:relative}
+.lu-say{position:absolute; top:-6px; left:50%; transform:translateX(-50%); z-index:3; white-space:nowrap; background:#fff; color:#111; font-family:var(--f-speech); font-weight:900; padding:.3em .8em; border-radius:14px; animation:bubbleIn .35s cubic-bezier(.3,1.6,.5,1)}
+.plate{font-family:var(--f-punch); background:var(--fg); color:var(--night); padding:0 .6em; border-radius:4px; font-size:.85em}
+.accuse-panel{display:grid; gap:12px; justify-items:start; padding:18px 20px; border-radius:16px; background:var(--panel); border:2px solid var(--red); animation:bubbleIn .35s cubic-bezier(.3,1.6,.5,1)}
+.accuse-panel p{font-size:1.1em}
+.accuse-panel b{font-family:var(--f-punch); font-weight:400; color:var(--gold)}
+.verdict{display:grid; justify-items:center; gap:14px; text-align:center}
+.verdict-stamp{font-family:var(--f-punch); font-size:clamp(40px, 8vw, 110px); color:var(--red); border:8px solid currentColor; padding:0 .3em; border-radius:12px; line-height:1.15; animation:stampIn .4s both}
+.verdict-stamp.miss{color:#c6ccda}
+
+/* ---------- 보고서 ---------- */
+.report{padding:clamp(20px,3vw,36px); display:grid; gap:16px; position:relative; background:var(--paper); color:var(--ink); border-radius:6px; box-shadow:0 14px 40px rgba(0,0,0,.5);
+  background-image:repeating-linear-gradient(0deg, transparent 0 33px, rgba(70,90,140,.12) 33px 34px)}
+.report-head{display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-family:var(--f-type); letter-spacing:.1em; border-bottom:2px solid var(--ink); padding-bottom:.4em; text-transform:uppercase; font-size:.85em; color:var(--ink-dim)}
+.zone{display:flex; flex-wrap:wrap; gap:10px; align-items:center; min-height:3.8em; padding:12px; border-radius:10px}
+.zone.answer{border:3px dashed var(--ink-dim); background:rgba(255,255,255,.4)}
+.zone.answer:empty::before{content:"여기에 조각을 순서대로 놓으세요"; color:var(--ink-dim); font-size:.9em}
+.zone.pool{background:rgba(33,28,21,.08)}
+.zone.over{border-color:var(--red); background:rgba(229,71,59,.1)}
+.tile{
+  font-family:var(--f-doc); font-weight:700; font-size:var(--fs-doc); line-height:1.25; cursor:grab; user-select:none;
+  padding:.35em .75em; border-radius:10px; border:2px solid var(--ink); background:#fffaf0; color:var(--ink);
+  box-shadow:0 4px 0 var(--ink); transition:transform .1s, box-shadow .1s; animation:bubbleIn .3s cubic-bezier(.3,1.6,.5,1);
+}
+.tile:hover{transform:translateY(-2px); box-shadow:0 6px 0 var(--ink)}
+.tile:active{transform:translateY(3px); box-shadow:0 1px 0 var(--ink)}
+.tile.dragging{opacity:.35}
+.rep-msg{font-weight:700; min-height:1.6em}
+.rep-msg.bad{color:var(--red-deep)} .rep-msg.ok{color:#1d7a46}
+.closed-stamp{position:absolute; top:40%; left:50%; transform:translate(-50%,-50%) rotate(-10deg); font-family:var(--f-punch); font-size:clamp(36px,7vw,90px); color:var(--red); border:8px solid currentColor; padding:0 .3em; border-radius:12px; background:rgba(244,235,212,.75); pointer-events:none; white-space:nowrap; animation:stampC .4s both}
+@keyframes stampC{from{transform:translate(-50%,-50%) rotate(-10deg) scale(2.8); opacity:0} to{transform:translate(-50%,-50%) rotate(-10deg) scale(1); opacity:1}}
+
+/* ---------- 결과 / 엔딩 ---------- */
+.result-head{display:flex; flex-wrap:wrap; gap:clamp(16px,3vw,40px); align-items:center}
+.grade{
+  flex:none; width:clamp(120px,16vw,190px); aspect-ratio:1; max-width:100%; border-radius:50%; display:grid; place-items:center;
+  font-family:var(--f-punch); font-size:clamp(64px,9vw,112px); color:var(--red); border:8px double var(--red);
+  background:var(--paper); transform:rotate(-8deg) scale(0);
+}
+.grade.show{animation:gradeIn .45s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes gradeIn{0%{transform:rotate(-8deg) scale(3); opacity:0} 100%{transform:rotate(-8deg) scale(1); opacity:1}}
+.res-nabi{display:flex; align-items:flex-end; gap:10px; margin-top:10px}
+.res-nabi .face{width:70px; flex:none}
+.res-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px}
+.res-stat{padding:12px 14px; border-radius:12px; background:var(--panel); border:1.5px solid var(--line); animation:bubbleIn .4s cubic-bezier(.3,1.6,.5,1) both; animation-delay:var(--d)}
+.res-stat span{display:block; font-size:.8em; color:var(--fg-dim)}
+.res-stat b{font-family:var(--f-punch); font-weight:400; font-size:1.5em; font-variant-numeric:tabular-nums}
+.res-list{display:grid; gap:12px}
+.res-item{padding:16px 18px; display:grid; gap:8px; background:var(--paper); color:var(--ink); border-radius:12px}
+.res-item .tag{font-family:var(--f-punch); color:var(--red)}
+.res-item .pair{font-family:var(--f-doc); font-size:.95em}
+.res-item .hit{font-family:var(--f-ui); font-size:.72em; font-weight:700; background:var(--red); color:#fff; padding:.05em .5em; border-radius:4px; margin-left:.4em; vertical-align:middle}
+.end{display:grid; gap:18px; justify-items:center; text-align:center; padding-top:4vh}
+.end-stamp{font-family:var(--f-punch); font-size:clamp(36px, 1rem + 5vw, 86px); color:var(--red); border:6px solid var(--red); padding:0 .35em; transform:rotate(-4deg); border-radius:10px; animation:stampIn .45s both; line-height:1.15}
+.end-faces{display:flex; gap:clamp(10px,4vw,60px); align-items:flex-end; justify-content:center; flex-wrap:wrap}
+.end-face{display:grid; justify-items:center; gap:6px; width:clamp(150px,22vw,240px); position:relative}
+.end-face .lu-say{top:-14px}
+.end-box{max-width:760px; text-align:left; display:grid; gap:12px; padding:clamp(18px,3vw,28px); border-radius:16px; background:var(--paper); color:var(--ink)}
+.end-box .gp{font-size:.95em}
+
+/* ---------- 효과 레이어 ---------- */
+#rain{position:fixed; inset:0; z-index:4; pointer-events:none; width:100%; height:100%}
+#fx{position:fixed; inset:0; z-index:90; pointer-events:none; width:100%; height:100%}
+#flash{position:fixed; inset:0; z-index:85; pointer-events:none; opacity:0; background:#fff}
+#flash.on{animation:flashA .45s ease-out}
+@keyframes flashA{0%{opacity:.85} 100%{opacity:0}}
+#vignette{position:fixed; inset:0; z-index:3; pointer-events:none; opacity:0; transition:opacity .4s;
+  background:radial-gradient(ellipse at center, transparent 55%, rgba(229,71,59,.45) 100%)}
+body.danger #vignette{opacity:1; animation:dangerPulse 1.6s ease-in-out infinite}
+@keyframes dangerPulse{50%{opacity:.45}}
+#wipe{position:fixed; inset:0; z-index:95; pointer-events:none; background:var(--night); transform:translateX(-101%);
+  background-image:repeating-linear-gradient(-45deg, transparent 0 22px, rgba(245,196,67,.08) 22px 44px)}
+#wipe.in{transform:translateX(0); transition:transform .28s cubic-bezier(.7,0,.3,1)}
+#wipe.out{transform:translateX(101%); transition:transform .28s cubic-bezier(.7,0,.3,1)}
+.shake-s{animation:shakeS .35s}
+.shake-l{animation:shakeL .5s}
+@keyframes shakeS{0%,100%{transform:none} 25%{transform:translate(-5px,2px)} 50%{transform:translate(4px,-2px)} 75%{transform:translate(-2px,1px)}}
+@keyframes shakeL{0%,100%{transform:none} 15%{transform:translate(-14px,6px) rotate(-.6deg)} 30%{transform:translate(12px,-6px) rotate(.5deg)} 45%{transform:translate(-9px,3px)} 60%{transform:translate(7px,-3px)} 80%{transform:translate(-3px,1px)}}
+.float{position:fixed; z-index:91; pointer-events:none; font-family:var(--f-punch); font-size:28px; color:var(--gold); text-shadow:2px 2px 0 #000; animation:floatUp 1s ease-out forwards}
+.float.bad{color:var(--red)}
+@keyframes floatUp{0%{transform:translateY(0) scale(.6); opacity:0} 20%{transform:translateY(-10px) scale(1.2); opacity:1} 100%{transform:translateY(-60px) scale(1); opacity:0}}
+#toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(170px + env(safe-area-inset-bottom,0px)); z-index:60; max-width:min(560px, calc(100% - 32px)); padding:.7em 1.1em; border-radius:12px; background:var(--fg); color:var(--night); font-weight:700; box-shadow:0 8px 24px rgba(0,0,0,.5)}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important; transition:none!important}
+  .title-big span,.cut-word.slam,.cut-card.in,.grade.show{opacity:1}
+  .grade.show{transform:rotate(-8deg)}
+}
+</style>
+</head>
+<body>
+
+
+<canvas id="rain" aria-hidden="true"></canvas>
+<div id="vignette" aria-hidden="true"></div>
+
+<div id="app">
+  <!-- ===== 상단 정보줄 ===== -->
+  <header id="hud" hidden>
+    <div class="hud-id"><div class="hud-face" id="hud-face"></div><div><b id="hud-team">수사팀</b><span id="hud-case"></span></div></div>
+    <div class="hud-stats">
+      <div class="hearts" id="hud-hearts"></div>
+      <div class="exs" id="hud-ex"></div>
+      <div class="time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg><span id="hud-time">00:00</span></div>
+    </div>
+    <div class="hud-actions">
+      <button class="ibtn" id="btn-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/></svg>돋보기 <span class="count" id="hint-left">2</span></button>
+      <button class="ibtn" id="btn-gloss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 4.5A1.5 1.5 0 015.5 3H20v15H5.5A1.5 1.5 0 004 19.5zM4 19.5A1.5 1.5 0 005.5 21H20v-3"/></svg>단어장</button>
+      <button class="ibtn btn-mute"></button>
+      <button class="ibtn" id="btn-home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></svg>처음으로</button>
+      <button class="btn accuse" id="btn-accuse" disabled>범인 지목</button>
+    </div>
+  </header>
+
+  <!-- ===== 1. 타이틀 ===== -->
+  <section id="s-title">
+    <div class="scene-bg" id="title-bg"></div>
+    <div class="title-inner">
+      <div>
+        <span class="secret">TOP SECRET</span>
+        <h1 class="title-big" id="title-big" aria-label="진술서 탐정"></h1>
+        <p class="title-en">CONTRADICTION DETECTIVE</p>
+        <p class="title-lede">용의자 중 <b>한 명이 거짓말</b>을 하고 있다. 진술서 속 <b>서로 맞지 않는 두 문장</b>을 찾아 OBJECTION!을 외쳐라.</p>
+      </div>
+      <div class="title-card">
+        <div class="lineup-sil" id="title-sil"></div>
+        <h2 id="title-case"></h2>
+        <div class="nabi-peek"><div class="face" id="title-nabi"></div><p class="say">탐정님, 사건을 맡아 주세요!</p></div>
+        <div class="field">
+          <label for="team-name">팀 이름 (선택)</label>
+          <input id="team-name" maxlength="20" placeholder="예: 3모둠 셜록즈" autocomplete="off">
+        </div>
+        <div class="row">
+          <button class="btn primary big" id="btn-start">수사 시작 ▶</button>
+          <button class="btn" id="btn-resume" hidden>이어하기</button>
+        </div>
+        <p id="resume-note" style="font-size:.85em; color:var(--fg-dim)" hidden></p>
+        <div class="row">
+          <button class="ibtn" id="btn-load">사건 불러오기 (교사용)</button>
+          <button class="ibtn btn-mute"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 2. 스토리 (브리핑 + 용의자 소개 + 튜토리얼) ===== -->
+  <section id="s-story" hidden>
+    <div class="scene" id="vn-scene">
+      <div class="scene-bg" id="story-bg"></div>
+      <div class="vn-prog" id="vn-prog"></div>
+      <button class="ibtn vn-skip" id="vn-skip">건너뛰기 ▶▶</button>
+      <div class="vn-stage" id="vn-stage"></div>
+      <div class="vn-box">
+        <div class="vn-name" id="vn-name"></div>
+        <p class="vn-text" id="vn-text" aria-live="polite"></p>
+        <span class="vn-next">▼ 눌러서 계속</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 3. 조사 ===== -->
+  <section id="s-inv" data-view="board" hidden>
+    <div class="inv-switch" role="tablist">
+      <button class="ibtn" role="tab" data-view="board">증거 보드</button>
+      <button class="ibtn" role="tab" data-view="room">심문실</button>
+    </div>
+    <div class="inv-grid">
+      <div class="board">
+        <div class="board-title"><b>EVIDENCE BOARD</b><span>사건 파일 · 확인된 사실</span></div>
+        <div class="notes" id="file-lines"></div>
+      </div>
+      <div class="room">
+        <div class="sus-tabs" id="suspect-tabs" role="tablist"></div>
+        <div class="interro">
+          <div class="lamp"></div>
+          <div class="who">
+            <div class="who-face" id="room-face"></div>
+            <div class="nameplate" id="room-name"></div>
+          </div>
+          <div class="bubbles" id="room-bubbles"></div>
+        </div>
+      </div>
+    </div>
+    <div class="objbar">
+      <div class="nabi-row">
+        <div class="nabi-face" id="nabi-face"></div>
+        <div class="nabi-bubble"><b>나비 경감</b><p id="nabi-text"></p></div>
+      </div>
+      <div class="obj-row">
+        <div class="slots">
+          <div class="slot a" id="slot-a"></div>
+          <div class="slot b" id="slot-b"></div>
+        </div>
+        <div class="obj-actions">
+          <button class="ibtn" id="btn-clear">해제</button>
+          <button class="btn objection" id="btn-obj" disabled>OBJECTION!</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 4. 범인 지목 ===== -->
+  <section id="s-accuse" hidden>
+    <div class="stage">
+      <div class="stage-head">
+        <h2 class="punch">WHO DID IT?</h2>
+        <p>증거가 모두 모였습니다. 범인이라고 생각하는 사람을 고르세요. 기회는 한 번뿐!</p>
+      </div>
+      <div class="lineup-wall"><div class="lineup" id="lineup"></div></div>
+      <div class="accuse-panel" id="accuse-confirm" hidden>
+        <p id="accuse-q"></p>
+        <div class="row">
+          <button class="btn objection" id="accuse-yes">지목!</button>
+          <button class="ibtn" id="accuse-no">다시 생각하기</button>
+        </div>
+      </div>
+      <div class="verdict" id="accuse-verdict" hidden>
+        <div class="verdict-stamp" id="verdict-stamp"></div>
+        <button class="btn primary big" id="accuse-next">보고서 쓰러 가기 ▶</button>
+      </div>
+      <div><button class="ibtn" id="accuse-back">← 증거 다시 보기</button></div>
+    </div>
+  </section>
+
+  <!-- ===== 5. 사건 보고서 ===== -->
+  <section id="s-report" hidden>
+    <div class="stage">
+      <div class="stage-head">
+        <h2 class="punch">CASE REPORT</h2>
+        <p>범인을 잡았습니다! 마지막으로 영어 보고서의 결론 문장을 완성하세요.</p>
+      </div>
+      <div class="report" id="report-paper">
+        <div class="report-head"><span>Final Report</span><span id="rep-case"></span></div>
+        <p>단어 조각을 <b>순서대로 누르거나 끌어서</b> 위 줄에 놓으세요. 놓은 조각을 다시 누르면 되돌아갑니다.</p>
+        <div class="zone answer" id="rep-answer" data-zone="answer"></div>
+        <div class="zone pool" id="rep-pool" data-zone="pool"></div>
+        <p class="rep-msg" id="rep-msg" aria-live="polite"></p>
+        <div class="row">
+          <button class="ibtn" id="rep-reset" style="color:var(--ink); border-color:var(--ink-dim); background:transparent">다시 배열</button>
+          <button class="btn primary" id="rep-check">보고서 제출</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 6. 결과 ===== -->
+  <section id="s-result" hidden>
+    <div class="stage">
+      <div class="result-head">
+        <div class="grade" id="res-grade">S</div>
+        <div class="stage-head">
+          <h2 class="punch" id="res-title">CASE CLOSED</h2>
+          <p id="res-sub"></p>
+          <div class="res-nabi"><div class="face" id="res-nabi"></div><p class="say" id="res-say"></p></div>
+        </div>
+      </div>
+      <div class="res-stats" id="res-stats"></div>
+      <h3>찾은 증거와 문법 포인트</h3>
+      <div class="res-list" id="res-ex"></div>
+      <h3>함정 문장 해설</h3>
+      <p style="color:var(--fg-dim); margin-top:-10px">모순처럼 보이지만 사실은 모순이 아닌 문장 짝입니다.</p>
+      <div class="res-list" id="res-traps"></div>
+      <div class="row">
+        <button class="btn primary big btn-restart">다시 하기</button>
+        <button class="ibtn btn-title">처음 화면</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 수사 실패 ===== -->
+  <section id="s-fail" hidden>
+    <div class="end">
+      <span class="end-stamp">CASE FAILED</span>
+      <div class="end-faces"><div class="end-face" id="fail-nabi"></div></div>
+      <div class="end-box">
+        <h2>신뢰도를 모두 잃었어요…</h2>
+        <p>잘못된 증거를 너무 많이 제출해서 수사에서 빠지게 되었습니다.</p>
+        <p><b>다음엔 이렇게!</b> 제출하기 전에 두 문장이 <b>같은 사람, 같은 시간, 같은 장소</b>에 대한 이야기인지 확인하세요.</p>
+        <p id="fail-found"></p>
+      </div>
+      <div class="row" style="justify-content:center">
+        <button class="btn primary big btn-restart">다시 도전</button>
+        <button class="ibtn btn-title">처음 화면</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 오인 체포 ===== -->
+  <section id="s-bad" hidden>
+    <div class="end">
+      <span class="end-stamp">WRONG SUSPECT</span>
+      <div class="end-faces" id="bad-faces"></div>
+      <div class="end-box" id="bad-body"></div>
+      <div class="row" style="justify-content:center">
+        <button class="btn primary big btn-restart">다시 도전</button>
+        <button class="ibtn btn-title">처음 화면</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===== OBJECTION 컷신 ===== -->
+<div id="cut" hidden>
+  <div class="cut-bg"></div>
+  <div class="cut-word" id="cut-word">OBJECTION!</div>
+  <div class="cut-verdict" id="cut-verdict"></div>
+  <div class="cut-arena">
+    <div class="cut-card a" id="cut-a"></div>
+    <div class="cut-card b" id="cut-b"></div>
+  </div>
+  <div class="cut-who" id="cut-who"><div class="cut-face" id="cut-face"></div><p class="cut-say" id="cut-say"></p></div>
+  <span class="cut-skip">화면을 누르면 빨리 넘어갑니다</span>
+</div>
+
+<!-- ===== 증거 카드 ===== -->
+<div class="modal" id="m-card" hidden>
+  <div class="card" id="card-body" role="dialog" aria-modal="true"></div>
+</div>
+
+<!-- ===== 단어장 ===== -->
+<div class="modal" id="m-gloss" hidden>
+  <div class="mini" role="dialog" aria-modal="true" aria-labelledby="gloss-h">
+    <h2 id="gloss-h">단어장</h2>
+    <ul class="gloss-list" id="gloss-list"></ul>
+    <div><button class="btn primary modal-close">닫기</button></div>
+  </div>
+</div>
+
+<!-- ===== 사건 불러오기 (교사용) ===== -->
+<div class="modal" id="m-load" hidden>
+  <div class="mini" role="dialog" aria-modal="true" aria-labelledby="load-h">
+    <h2 id="load-h">사건 불러오기</h2>
+    <p style="font-size:.9em">새 사건의 JSON을 붙여넣고 <b>불러오기</b>를 누르세요. 지금 사건의 JSON이 미리 채워져 있으니 고쳐서 써도 됩니다. 불러오면 진행 중인 기록은 초기화됩니다. 용의자 외모(look)는 빼도 되며, 없으면 이름에 맞춰 자동으로 그려집니다.</p>
+    <label for="load-file" style="font-size:.9em; font-weight:700">또는 .json 파일 선택</label>
+    <input type="file" id="load-file" accept=".json,application/json,text/plain">
+    <textarea id="load-text" spellcheck="false" aria-label="사건 JSON"></textarea>
+    <p class="err" id="load-err" aria-live="polite"></p>
+    <div class="row">
+      <button class="btn primary" id="load-go">불러오기</button>
+      <button class="ibtn" id="load-sample">샘플 사건으로 되돌리기</button>
+      <button class="ibtn modal-close">닫기</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="fx" aria-hidden="true"></canvas>
+<div id="flash" aria-hidden="true"></div>
+<div id="wipe" aria-hidden="true"></div>
+<div id="toast" role="status" hidden></div>
+
+<script>
+/* =====================================================================
+   사건 데이터
+   선생님은 이 CASE 내용만 바꾸면 새 사건을 만들 수 있습니다.
+   - id는 서로 겹치지 않게 (사건 파일 F1, F2... / 진술 D1, E1...)
+   - contradictions: 정답 모순 짝 (pair의 순서는 상관없음)
+   - traps: 모순처럼 보이지만 아닌 짝 + 틀렸을 때 보여줄 힌트
+   - culprit: 범인 이름 (suspects의 name과 똑같이)
+   - reportSentence: 보고서 결론 문장 조각 (정답 순서대로)
+   - look (선택): 캐릭터 외모. 빼면 이름에 맞춰 자동으로 그려집니다.
+       skin/hair/outfit/hatColor: 색상 코드
+       hairStyle: short | bob | long | spiky | bun
+       hat: cap | beret | bandana | none
+       outfitStyle: guard | blazer | coverall | apron | plain
+       glasses: true/false, voice: 목소리 높이(150~450)
+   화면의 "사건 불러오기" 버튼으로 JSON을 붙여넣어도 됩니다.
+   ===================================================================== */
+const CASE = {
+  "title": "The Missing Painting",
+  "briefing": "Last Friday night, the famous painting Blue Morning disappeared from Hanbit Museum. Four people were near the museum that night. One of them is lying. Read their statements carefully and find the truth.",
+  "glossary": {
+    "curator": "큐레이터 (전시 담당자)",
+    "theft": "절도",
+    "out of order": "고장 난",
+    "statement": "진술"
+  },
+  "caseFile": [
+    { "id": "F1", "text": "Hanbit Museum closes at 8:00 p.m." },
+    { "id": "F2", "text": "It rained heavily from 8:30 p.m. until midnight." },
+    { "id": "F3", "text": "The power went out at 9:10 p.m., and the security cameras stopped recording." },
+    { "id": "F4", "text": "The alarm rang at 9:20 p.m., and the painting was gone from the 2nd floor." },
+    { "id": "F5", "text": "The elevator was out of order that day." }
+  ],
+  "suspects": [
+    { "name": "Daniel Park", "role": "Security Guard",
+      "look": { "skin": "#e9bf98", "hair": "#23211f", "hairStyle": "short", "hat": "cap", "hatColor": "#22355e", "outfit": "#30528a", "outfitStyle": "guard", "voice": 170 },
+      "statements": [
+      { "id": "D1", "text": "I was in the security room on the first floor all night." },
+      { "id": "D2", "text": "I called Ms. Lee at 9:40 to tell her what had happened." },
+      { "id": "D3", "text": "If I had checked the back door, this wouldn't have happened." }
+    ]},
+    { "name": "Emma Lee", "role": "Curator",
+      "look": { "skin": "#f3d0b2", "hair": "#3b2316", "hairStyle": "bob", "glasses": true, "hat": "none", "outfit": "#7c2a3a", "outfitStyle": "blazer", "voice": 330 },
+      "statements": [
+      { "id": "E1", "text": "I left the museum at 8:30 after I had finished my work." },
+      { "id": "E2", "text": "It was a clear, quiet night, so I walked home." },
+      { "id": "E3", "text": "I didn't know about the theft until I came to work the next morning." },
+      { "id": "E4", "text": "I have never owned a raincoat." }
+    ]},
+    { "name": "Jake Wilson", "role": "Cleaner",
+      "look": { "skin": "#d9a275", "hair": "#b8692e", "hairStyle": "spiky", "hat": "bandana", "hatColor": "#3f8f6a", "outfit": "#5a7d64", "outfitStyle": "coverall", "voice": 230 },
+      "statements": [
+      { "id": "J1", "text": "I cleaned the staff room at 6 p.m." },
+      { "id": "J2", "text": "I noticed the red raincoat that Ms. Lee always wears hanging there." },
+      { "id": "J3", "text": "I went home at 9 p.m. because my shift was over." }
+    ]},
+    { "name": "Sophie Kim", "role": "Café Owner across the street",
+      "look": { "skin": "#f5d5b8", "hair": "#1e1915", "hairStyle": "long", "hat": "beret", "hatColor": "#c2453a", "outfit": "#2f2f36", "outfitStyle": "apron", "voice": 410 },
+      "statements": [
+      { "id": "S1", "text": "I closed my café at 9 p.m." },
+      { "id": "S2", "text": "While I was cleaning the window, I saw a woman in a red raincoat running toward a taxi." }
+    ]}
+  ],
+  "culprit": "Emma Lee",
+  "contradictions": [
+    {
+      "pair": ["E2", "F2"],
+      "type": "사실 충돌",
+      "explanation": "엠마는 맑은 밤이라 걸어서 집에 갔다고 했지만, 사건 파일에 따르면 8시 30분부터 폭우가 내렸다.",
+      "grammarPoint": "세부 정보 대조 독해: 시각과 날씨처럼 구체적인 정보를 사실 자료와 하나씩 비교한다."
+    },
+    {
+      "pair": ["E3", "D2"],
+      "type": "시간 선후",
+      "explanation": "다니엘은 9시 40분에 이미 일어난 일(what had happened)을 알리려고 엠마에게 전화했다. 엠마가 다음 날 아침까지 절도 사실을 몰랐다는 말과 맞지 않는다.",
+      "grammarPoint": "과거완료(had p.p.)는 과거의 특정 시점(9시 40분 전화)보다 먼저 일어난 일을 나타낸다."
+    },
+    {
+      "pair": ["E4", "J2"],
+      "type": "지칭과 수식",
+      "explanation": "관계사절 'that Ms. Lee always wears'가 빨간 우비를 꾸며, 엠마가 그 우비를 늘 입는다는 사실을 보여준다. 우비가 한 번도 없었다는 말과 맞지 않는다.",
+      "grammarPoint": "목적격 관계대명사절(that + 주어 + 동사)이 앞의 명사(the red raincoat)를 수식한다."
+    }
+  ],
+  "traps": [
+    { "pair": ["S1", "F1"], "hint": "두 문장은 서로 다른 장소에 대한 이야기예요. 카페와 박물관의 문 닫는 시각은 달라도 돼요." },
+    { "pair": ["D3", "D1"], "hint": "가정법 과거완료(If I had checked...)는 실제로는 확인하지 않았다는 뜻이에요. 후회일 뿐 모순은 아니에요." },
+    { "pair": ["J3", "F4"], "hint": "제이크는 9시에 떠났고 알람은 9시 20분에 울렸어요. 두 사실이 동시에 참일 수 있지 않나요?" }
+  ],
+  "reportSentence": ["Emma Lee", "stole the painting", "because", "her statements", "did not match", "the facts"]
+};
+
+/* ===== 게임 설정 ===== */
+const MAX_HEARTS = 5;          // 신뢰도 하트 개수
+const MAX_HINTS = 2;           // 돋보기 사용 횟수
+const TIME_PAR = 600;          // 이 시간(초) 안에 해결하면 시간 감점 없음
+const KEY = { custom: 'cd.customCase', prog: 'cd2.progress', mute: 'cd.muted' };
+const RUNNING = ['inv', 'accuse', 'report'];   // 시간이 흐르는 화면
+
+/* 캐릭터 대사 (영어 노출용) */
+const LINES = {
+  shocked: ["W-what?!", "Th-that's...!", "I... I can explain!", "No way...!"],
+  smug: ["Nice try, detective.", "That's not a contradiction!", "Read it again, please.", "Both can be true, you know."],
+  guilty: ["...You got me. I did it.", "I... I took the painting."],
+  innocent: ["What?! It wasn't me!", "I'm innocent, I told you!"],
+  escape: ["See you, detective~", "Too bad, detective!"]
+};
+const NABI_CHEER = ["대단해요! 증거 확보!", "역시 탐정님이에요!", "딱 걸렸어요! 멋져요!", "완벽한 추리예요!"];
+
+/* ===== 저장소: 쓸 수 없는 환경에서도 게임은 정상 작동 ===== */
+const store = {
+  get(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+};
+
+/* ===== 효과음 (Web Audio API로 직접 합성) ===== */
+let muted = store.get(KEY.mute) === true;
+const AU = { ctx: null, master: null, noiseBuf: null, rain: false };
+function audio() {
+  if (AU.ctx) return AU.ctx;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    AU.ctx = new AC();
+    AU.master = AU.ctx.createGain();
+    AU.master.gain.value = muted ? 0 : 1;
+    AU.master.connect(AU.ctx.destination);
+    const len = AU.ctx.sampleRate * 2;
+    AU.noiseBuf = AU.ctx.createBuffer(1, len, AU.ctx.sampleRate);
+    const d = AU.noiseBuf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  } catch (e) { AU.ctx = null; }
+  return AU.ctx;
+}
+function tone(f, dur, type = 'sine', vol = 0.1, when = 0, to = null) {
+  const c = audio(); if (!c || muted) return;
+  try {
+    if (c.state === 'suspended') c.resume();
+    const t = c.currentTime + when;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(AU.master);
+    o.start(t); o.stop(t + dur + 0.05);
+  } catch (e) {}
+}
+function noise(dur, vol = 0.1, when = 0, freq = 1000, ftype = 'bandpass', q = 1, to = null) {
+  const c = audio(); if (!c || muted) return;
+  try {
+    const t = c.currentTime + when;
+    const s = c.createBufferSource(); s.buffer = AU.noiseBuf;
+    const f = c.createBiquadFilter(); f.type = ftype; f.frequency.setValueAtTime(freq, t); f.Q.value = q;
+    if (to) f.frequency.exponentialRampToValueAtTime(to, t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(AU.master);
+    s.start(t, Math.random()); s.stop(t + dur + 0.05);
+  } catch (e) {}
+}
+function startRainSound() {
+  const c = audio(); if (!c || AU.rain) return;
+  try {
+    const s = c.createBufferSource(); s.buffer = AU.noiseBuf; s.loop = true;
+    const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1200;
+    const g = c.createGain(); g.gain.value = 0.03;
+    s.connect(f); f.connect(g); g.connect(AU.master); s.start();
+    AU.rain = true;
+  } catch (e) {}
+}
+function setMuted(m) {
+  muted = m; store.set(KEY.mute, m);
+  if (AU.master) AU.master.gain.value = m ? 0 : 1;
+  renderMute();
+}
+const sfx = {
+  click:     () => tone(620, 0.05, 'triangle', 0.06),
+  select:    () => tone(660, 0.09, 'triangle', 0.09, 0, 1100),
+  deselect:  () => tone(520, 0.08, 'triangle', 0.06, 0, 300),
+  blip:      p  => tone(p * (0.95 + Math.random() * 0.15), 0.045, 'square', 0.028),
+  whoosh:    () => noise(0.35, 0.12, 0, 500, 'bandpass', 0.8, 3200),
+  slam:      () => { tone(95, 0.45, 'sine', 0.55, 0, 38); noise(0.22, 0.3, 0, 600, 'lowpass'); },
+  objection: () => { sfx.slam(); [392, 494, 587].forEach(f => tone(f, 0.4, 'sawtooth', 0.05, 0.02)); },
+  clash:     () => { noise(0.2, 0.28, 0, 2600, 'highpass'); tone(1400, 0.16, 'square', 0.05, 0, 260); },
+  correct:   () => { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.32, 'triangle', 0.1, i * 0.07)); noise(0.5, 0.04, 0.3, 7000, 'highpass'); },
+  wrong:     () => { tone(220, 0.25, 'square', 0.08, 0, 110); tone(160, 0.45, 'square', 0.07, 0.2, 70); },
+  heartbreak:() => { noise(0.3, 0.22, 0, 3200, 'highpass'); tone(700, 0.35, 'triangle', 0.08, 0, 120); },
+  stamp:     () => { tone(130, 0.2, 'square', 0.14, 0, 60); noise(0.14, 0.3, 0, 700, 'lowpass'); },
+  pop:       () => tone(800, 0.1, 'sine', 0.14, 0, 1600),
+  clack:     () => { noise(0.04, 0.2, 0, 3800, 'highpass'); tone(190, 0.03, 'square', 0.05); },
+  bell:      () => { tone(1568, 0.9, 'sine', 0.08); tone(2093, 0.7, 'sine', 0.04, 0.02); },
+  heartbeat: () => { tone(62, 0.16, 'sine', 0.45, 0, 40); tone(56, 0.16, 'sine', 0.35, 0.19, 38); },
+  drumroll:  d  => { for (let t = 0; t < d; t += 0.045) noise(0.05, 0.05 + 0.14 * (t / d), t, 900, 'bandpass', 1.2); },
+  fanfare:   () => [[523, 0], [659, 0.13], [784, 0.26], [1047, 0.42]].forEach(([f, w]) => { tone(f, 0.55, 'sawtooth', 0.05, w); tone(f / 2, 0.55, 'triangle', 0.09, w); }),
+  sad:       () => [392, 349, 311, 262].forEach((f, i) => tone(f, 0.5, 'triangle', 0.08, i * 0.24)),
+  thunder:   () => noise(2.4, 0.3, 0.15, 260, 'lowpass', 0.7, 50),
+  tick:      () => tone(1500, 0.02, 'square', 0.02)
+};
+
+/* ===== 도구 함수 ===== */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const pk = (a, b) => [a, b].sort().join('|');
+const letter = i => String.fromCharCode(65 + i);
+const fmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
+const reduceMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function hash(s) { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return Math.abs(h); }
+function shade(hex, amt) {
+  const n = parseInt(String(hex).replace('#', ''), 16);
+  if (isNaN(n)) return hex;
+  const c = v => Math.max(0, Math.min(255, v + amt));
+  return '#' + [c(n >> 16), c((n >> 8) & 255), c(n & 255)].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+/* 화면을 누르면 연출을 빨리 넘길 수 있는 대기 함수 */
+let skipNow = null;
+function sleep(ms) { return new Promise(r => { const t = setTimeout(r, ms); skipNow = () => { clearTimeout(t); r(); }; }); }
+
+/* 단어장에 있는 단어에 한글 뜻 툴팁을 붙인다 */
+function gloss(text, focusable) {
+  const g = C.glossary || {};
+  const keys = Object.keys(g).filter(Boolean).sort((a, b) => b.length - a.length);
+  const html = esc(text);
+  if (!keys.length) return html;
+  const lower = {}; keys.forEach(k => lower[k.toLowerCase()] = g[k]);
+  const re = new RegExp('\\b(' + keys.map(k => escRe(esc(k))).join('|') + ')', 'gi');
+  return html.replace(re, m => `<span class="gl"${focusable ? ' tabindex="0"' : ''} data-tip="${esc(lower[m.toLowerCase()] || '')}">${m}</span>`);
+}
+
+/* =====================================================================
+   캐릭터 그리기 (SVG)
+   mood: normal | nervous | shocked | smug | angry | happy | broken
+   ===================================================================== */
+function lookOf(i) {
+  const s = C.suspects[i];
+  const base = autoLook(s.name);
+  return Object.assign(base, s.look || {});
+}
+function autoLook(name) {
+  const h = hash(name);
+  const pickH = (arr, k) => arr[Math.floor(h / k) % arr.length];
+  return {
+    skin: pickH(['#f3d0b2', '#e9bf98', '#d9a275', '#b97f55', '#8d5a3b'], 1),
+    hair: pickH(['#1e1915', '#3b2316', '#6b3d1f', '#b8692e', '#d9b45a', '#55565c'], 7),
+    hairStyle: pickH(['short', 'bob', 'long', 'spiky', 'bun'], 13),
+    hat: pickH(['none', 'none', 'cap', 'beret', 'bandana'], 31),
+    hatColor: pickH(['#22355e', '#c2453a', '#3f8f6a', '#6b4a8a'], 37),
+    outfit: pickH(['#30528a', '#7c2a3a', '#5a7d64', '#2f2f36', '#8a6a2f', '#4b3d6e'], 53),
+    outfitStyle: pickH(['plain', 'blazer', 'guard', 'apron', 'coverall'], 71),
+    glasses: h % 5 === 0,
+    voice: 160 + (h % 260)
+  };
+}
+function portraitSVG(L, mood = 'normal', sweat = 0) {
+  const k = L.skin, kd = shade(k, -22), hc = L.hair, o = L.outfit, od = shade(o, -28), ink = '#1d1a17';
+  let back = '', front = '', hat = '', body = '';
+  if (L.hairStyle === 'bob')  back = `<path d="M40 104 C30 42 78 26 100 28 C124 26 172 42 160 104 L162 150 Q150 160 138 148 L62 148 Q50 160 38 150 Z" fill="${hc}"/>`;
+  if (L.hairStyle === 'long') back = `<path d="M40 104 C30 40 78 24 100 26 C124 24 172 40 160 104 L170 205 Q150 215 132 200 L68 200 Q50 215 30 205 Z" fill="${hc}"/>`;
+  if (L.hairStyle === 'bun')  back = `<circle cx="100" cy="30" r="22" fill="${hc}"/>`;
+  body = `<path d="M14 222 C18 176 56 160 100 160 C144 160 182 176 186 222 Z" fill="${o}"/>`;
+  switch (L.outfitStyle) {
+    case 'guard': body += `<path d="M78 162 L100 190 L122 162 Z" fill="#dfe6f0"/><path d="M96 174 L104 174 L106 206 L100 214 L94 206 Z" fill="#1c2236"/><path d="M140 182 l5 10 11 1 -8 7 3 11 -11 -6 -11 6 3 -11 -8 -7 11 -1 Z" fill="#e8c14a"/>`; break;
+    case 'blazer': body += `<path d="M82 162 L100 200 L118 162 Z" fill="#f3efe6"/><path d="M70 164 L96 214 L84 222 L58 178 Z" fill="${od}"/><path d="M130 164 L104 214 L116 222 L142 178 Z" fill="${od}"/>`; break;
+    case 'coverall': body += `<rect x="64" y="168" width="10" height="54" fill="${od}"/><rect x="126" y="168" width="10" height="54" fill="${od}"/><rect x="84" y="192" width="32" height="22" rx="3" fill="${od}"/>`; break;
+    case 'apron': body += `<path d="M66 180 Q100 172 134 180 L138 222 L62 222 Z" fill="#e9dcc2"/><path d="M80 164 L70 182 M120 164 L130 182" stroke="#e9dcc2" stroke-width="6"/>`; break;
+    default: body += `<path d="M80 162 Q100 180 120 162" stroke="${od}" stroke-width="7" fill="none"/>`;
+  }
+  const neck = `<path d="M82 136 H118 V164 Q100 176 82 164 Z" fill="${kd}"/>`;
+  const ears = `<ellipse cx="47" cy="106" rx="9" ry="13" fill="${k}"/><ellipse cx="153" cy="106" rx="9" ry="13" fill="${k}"/>`;
+  const head = `<ellipse cx="100" cy="100" rx="54" ry="60" fill="${k}"/>`;
+  switch (L.hairStyle) {
+    case 'short': front = `<path d="M45 96 C42 46 76 34 102 36 C134 36 160 54 155 96 C150 78 136 66 112 64 C96 72 70 70 52 78 Z" fill="${hc}"/>`; break;
+    case 'bob':   front = `<path d="M46 108 C40 52 78 36 102 38 C130 38 162 56 154 108 C150 84 140 70 124 64 C110 78 76 80 58 72 C52 82 48 94 46 108 Z" fill="${hc}"/>`; break;
+    case 'long':  front = `<path d="M46 104 C42 50 78 34 100 36 C122 34 158 50 154 104 C148 78 130 62 100 60 C70 62 52 78 46 104 Z" fill="${hc}"/><path d="M100 37 L100 60" stroke="${shade(hc, 30)}" stroke-width="2"/>`; break;
+    case 'spiky': front = `<path d="M44 98 L40 62 L58 70 L58 40 L78 56 L88 28 L102 50 L118 26 L124 54 L146 40 L144 68 L162 62 L156 98 C146 76 128 68 100 68 C72 68 54 76 44 98 Z" fill="${hc}"/>`; break;
+    default:      front = `<path d="M46 100 C42 50 78 38 100 38 C124 38 158 50 154 100 C146 74 124 64 100 64 C76 64 54 74 46 100 Z" fill="${hc}"/>`;
+  }
+  const hcol = L.hatColor || '#333';
+  if (L.hat === 'cap') hat = `<path d="M46 68 C48 26 152 26 154 68 Z" fill="${hcol}"/><path d="M40 68 H160 Q162 79 148 79 H52 Q38 79 40 68 Z" fill="${shade(hcol, -30)}"/><path d="M92 42 l8 -6 8 6 -2 11 h-12 Z" fill="#e8c14a"/>`;
+  if (L.hat === 'beret') hat = `<ellipse cx="88" cy="44" rx="58" ry="20" transform="rotate(-12 88 44)" fill="${hcol}"/><circle cx="84" cy="23" r="4.5" fill="${hcol}"/>`;
+  if (L.hat === 'bandana') hat = `<path d="M46 70 Q100 50 154 70 L154 81 Q100 62 46 81 Z" fill="${hcol}"/><path d="M152 72 l20 -9 -4 15 Z M152 76 l17 11 -17 3 Z" fill="${hcol}"/>`;
+
+  // 표정: 눈썹 / 눈 / 입
+  const S4 = `stroke="${ink}" stroke-width="4" stroke-linecap="round" fill="none"`;
+  const brows = {
+    normal:  `<path d="M66 84 Q77 79 88 83 M112 83 Q123 79 134 84" ${S4}/>`,
+    happy:   `<path d="M66 81 Q77 75 88 80 M112 80 Q123 75 134 81" ${S4}/>`,
+    nervous: `<path d="M66 87 L88 79 M112 79 L134 87" ${S4}/>`,
+    broken:  `<path d="M66 88 L88 78 M112 78 L134 88" ${S4}/>`,
+    angry:   `<path d="M66 77 L88 87 M112 87 L134 77" ${S4}/>`,
+    shocked: `<path d="M66 76 Q77 69 88 74 M112 74 Q123 69 134 76" ${S4}/>`,
+    smug:    `<path d="M66 85 L88 85 M112 79 Q123 72 134 80" ${S4}/>`
+  }[mood] || '';
+  const hi = (x, y) => `<circle cx="${x}" cy="${y}" r="2.4" fill="#fff"/>`;
+  let eyes;
+  switch (mood) {
+    case 'nervous': eyes = `<g class="eyes"><ellipse cx="77" cy="104" rx="9" ry="10" fill="#fff" stroke="${ink}" stroke-width="2"/><ellipse cx="123" cy="104" rx="9" ry="10" fill="#fff" stroke="${ink}" stroke-width="2"/><circle cx="72" cy="105" r="4.5" fill="${ink}"/><circle cx="118" cy="105" r="4.5" fill="${ink}"/></g>`; break;
+    case 'shocked': eyes = `<ellipse cx="77" cy="103" rx="11" ry="13" fill="#fff" stroke="${ink}" stroke-width="2.5"/><ellipse cx="123" cy="103" rx="11" ry="13" fill="#fff" stroke="${ink}" stroke-width="2.5"/><circle cx="77" cy="104" r="2.6" fill="${ink}"/><circle cx="123" cy="104" r="2.6" fill="${ink}"/>`; break;
+    case 'smug':    eyes = `<path d="M67 103 H87 M113 103 H133" ${S4}/><ellipse cx="80" cy="107" rx="5" ry="3.5" fill="${ink}"/><ellipse cx="126" cy="107" rx="5" ry="3.5" fill="${ink}"/>`; break;
+    case 'happy':   eyes = `<path d="M68 107 Q77 96 86 107 M114 107 Q123 96 132 107" ${S4}/>`; break;
+    case 'broken':  eyes = `<path d="M68 99 L85 105 L68 111 M132 99 L115 105 L132 111" ${S4}/><path d="M70 116 q-4 10 0 14 q4 -4 0 -14 Z M130 116 q-4 10 0 14 q4 -4 0 -14 Z" fill="#8fd3ff"/>`; break;
+    default:        eyes = `<g class="eyes"><ellipse cx="77" cy="104" rx="6.5" ry="8.5" fill="${ink}"/><ellipse cx="123" cy="104" rx="6.5" ry="8.5" fill="${ink}"/>${hi(79.5, 100.5)}${hi(125.5, 100.5)}</g>`;
+  }
+  const S3 = `stroke="${ink}" stroke-width="3.5" stroke-linecap="round" fill="none"`;
+  const mouth = {
+    normal:  `<path d="M90 133 Q100 140 110 133" ${S3}/>`,
+    happy:   `<path d="M86 129 Q100 148 114 129 Z" fill="#7a2b2b"/>`,
+    nervous: `<path d="M84 135 q4 -4 8 0 q4 4 8 0 q4 -4 8 0 q4 4 8 0" ${S3}/>`,
+    shocked: `<ellipse cx="100" cy="137" rx="8" ry="11" fill="#5a1f1f"/>`,
+    smug:    `<path d="M88 135 Q104 141 115 128" ${S3}/>`,
+    angry:   `<path d="M87 141 Q100 129 113 141" ${S3}/>`,
+    broken:  `<path d="M84 134 q4 -6 8 0 q4 6 8 0 q4 -6 8 0 q4 6 8 0 L116 143 Q100 151 84 143 Z" fill="#5a1f1f"/>`
+  }[mood] || '';
+  const nose = `<path d="M100 112 q-4 10 2 12" stroke="${kd}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
+  const glasses = L.glasses ? `<g fill="rgba(255,255,255,.18)" stroke="#2a2a2a" stroke-width="3"><rect x="62" y="91" width="30" height="25" rx="9"/><rect x="108" y="91" width="30" height="25" rx="9"/><path d="M92 102 h16" fill="none"/></g>` : '';
+  let extra = '';
+  if (mood === 'happy' || mood === 'smug') extra += `<ellipse cx="68" cy="123" rx="9" ry="5" fill="#ff8f8f" opacity=".4"/><ellipse cx="132" cy="123" rx="9" ry="5" fill="#ff8f8f" opacity=".4"/>`;
+  if (mood === 'nervous' || mood === 'broken') extra += `<g stroke="#5f86c0" stroke-width="3" opacity=".55" stroke-linecap="round"><path d="M84 70 v12 M96 68 v14 M108 68 v14 M120 70 v12"/></g>`;
+  if (mood === 'shocked') extra += `<g stroke="#ffd34d" stroke-width="5" stroke-linecap="round"><path d="M30 60 l-14 -10 M170 60 l14 -10 M24 100 h-16 M176 100 h16"/></g>`;
+  if (mood === 'angry') extra += `<path d="M140 64 l8 8 M148 64 l-8 8 M144 60 v16 M136 68 h16" stroke="#e5473b" stroke-width="4" stroke-linecap="round"/>`;
+  const drops = [[152, 72], [44, 82], [160, 102]].slice(0, Math.min(3, sweat))
+    .map(([x, y]) => `<path class="sweat" d="M${x} ${y} q-7 11 0 15 q7 -4 0 -15 Z" fill="#9fdcff" stroke="#5aa6d6" stroke-width="1.5"/>`).join('');
+  return `<svg class="pt" viewBox="0 0 200 222" aria-hidden="true">${back}${body}${neck}${ears}${head}${nose}${mouth}${eyes}${brows}${glasses}${front}${hat}${extra}${drops}</svg>`;
+}
+
+/* 도우미 캐릭터: 나비 경감 (탐정 고양이) */
+function nabiSVG(mood = 'normal') {
+  const f = '#f0a04b', fd = '#c97a28', w = '#fff6e8', ink = '#2a1d12';
+  const S4 = `stroke="${ink}" stroke-width="4" stroke-linecap="round" fill="none"`;
+  let eyes, mouth, brows = '', extra = '';
+  switch (mood) {
+    case 'happy':     eyes = `<path d="M66 104 Q76 92 86 104 M114 104 Q124 92 134 104" ${S4}/>`; mouth = `<path d="M90 128 Q100 142 110 128 Z" fill="#b84a5a"/>`; break;
+    case 'surprised': eyes = `<circle cx="76" cy="100" r="13" fill="#fff" stroke="${ink}" stroke-width="3"/><circle cx="124" cy="100" r="13" fill="#fff" stroke="${ink}" stroke-width="3"/><circle cx="76" cy="101" r="4" fill="${ink}"/><circle cx="124" cy="101" r="4" fill="${ink}"/>`; mouth = `<ellipse cx="100" cy="134" rx="6" ry="8" fill="#b84a5a"/>`; extra = `<g stroke="#ffd34d" stroke-width="5" stroke-linecap="round"><path d="M26 70 l-12 -8 M174 70 l12 -8"/></g>`; break;
+    case 'worried':   eyes = `<g class="eyes"><ellipse cx="76" cy="102" rx="9" ry="11" fill="${ink}"/><ellipse cx="124" cy="102" rx="9" ry="11" fill="${ink}"/><circle cx="79" cy="98" r="3" fill="#fff"/><circle cx="127" cy="98" r="3" fill="#fff"/></g>`; brows = `<path d="M64 84 L86 78 M114 78 L136 84" ${S4}/>`; mouth = `<path d="M90 132 q5 -4 10 0 q5 4 10 0" ${S4}/>`; break;
+    case 'sad':       eyes = `<path d="M66 100 Q76 108 86 100 M114 100 Q124 108 134 100" ${S4}/><path d="M72 110 q-5 12 0 16 q5 -4 0 -16 Z" fill="#8fd3ff"/>`; brows = `<path d="M64 86 L86 78 M114 78 L136 86" ${S4}/>`; mouth = `<path d="M90 136 Q100 128 110 136" ${S4}/>`; break;
+    default:          eyes = `<g class="eyes"><ellipse cx="76" cy="102" rx="9" ry="11" fill="${ink}"/><ellipse cx="124" cy="102" rx="9" ry="11" fill="${ink}"/><circle cx="79" cy="98" r="3" fill="#fff"/><circle cx="127" cy="98" r="3" fill="#fff"/></g>`; mouth = `<path d="M100 125 q-6 8 -12 2 M100 125 q6 8 12 2" stroke="${ink}" stroke-width="3" stroke-linecap="round" fill="none"/>`;
+  }
+  return `<svg class="pt" viewBox="0 0 200 180" aria-hidden="true">
+    <ellipse cx="100" cy="106" rx="70" ry="60" fill="${f}"/>
+    <path d="M100 52 v16 M82 54 l4 14 M118 54 l-4 14" stroke="${fd}" stroke-width="5" stroke-linecap="round"/>
+    <path d="M30 104 h18 M30 116 l18 -4 M170 104 h-18 M170 116 l-18 -4" stroke="${fd}" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="100" cy="128" rx="32" ry="22" fill="${w}"/>
+    <path d="M93 118 h14 l-7 8 Z" fill="#e2798b"/>
+    ${mouth}${eyes}${brows}
+    <path d="M70 122 l-30 -4 M70 128 l-30 4 M130 122 l30 -4 M130 128 l30 4" stroke="${ink}" stroke-width="1.6" opacity=".55"/>
+    <path d="M44 66 C48 22 152 22 156 66 Z" fill="#8a5a3b"/>
+    <path d="M60 30 L60 66 M80 24 L80 66 M100 22 L100 66 M120 24 L120 66 M140 30 L140 66 M48 46 H152" stroke="#6e4429" stroke-width="3" opacity=".7"/>
+    <path d="M68 62 Q100 78 132 62 L138 70 Q100 92 62 70 Z" fill="#6e4429"/>
+    <path d="M90 24 q10 -12 20 0 q-10 7 -20 0" fill="#6e4429"/>
+    <path d="M36 74 L34 26 L68 46 Z" fill="${f}"/><path d="M42 64 L42 38 L60 50 Z" fill="#f6b7a8"/>
+    <path d="M164 74 L166 26 L132 46 Z" fill="${f}"/><path d="M158 64 L158 38 L140 50 Z" fill="#f6b7a8"/>
+    ${extra}
+  </svg>`;
+}
+const FILE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="#3a2a14" stroke-width="2" stroke-linejoin="round"><path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5M9 12h8M9 16h8"/></svg>`;
+const HEART_SVG = `<svg class="heart" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54z"/></svg>`;
+const DROP_SVG = `<svg viewBox="0 0 10 13"><path d="M5 0 Q0 7 1.5 10 Q5 14 8.5 10 Q10 7 5 0 Z" fill="#5aa6d6"/></svg>`;
+const SPK_ON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11"/></svg>`;
+const SPK_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>`;
+
+/* 비 오는 밤 미술관 배경 */
+const MUSEUM_SVG = `<svg viewBox="0 0 1200 600" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#070a14"/><stop offset="1" stop-color="#1f2846"/></linearGradient>
+    <radialGradient id="mg"><stop offset="0" stop-color="#fff3cc" stop-opacity=".45"/><stop offset="1" stop-color="#fff3cc" stop-opacity="0"/></radialGradient>
+    <radialGradient id="lg"><stop offset="0" stop-color="#f5c443" stop-opacity=".5"/><stop offset="1" stop-color="#f5c443" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="600" fill="url(#sky)"/>
+  <circle cx="990" cy="120" r="140" fill="url(#mg)"/><circle cx="990" cy="120" r="44" fill="#f2e8c8"/>
+  <path d="M900 140 q40 -26 90 -6 q30 -20 70 0 q30 0 40 20 H880 q0 -14 20 -14Z" fill="#2a3352" opacity=".9"/>
+  <g fill="#0c1120">
+    <rect x="0" y="330" width="90" height="270"/><rect x="80" y="380" width="70" height="220"/><rect x="150" y="300" width="60" height="300"/>
+    <rect x="980" y="310" width="80" height="290"/><rect x="1050" y="360" width="70" height="240"/><rect x="1110" y="280" width="90" height="320"/>
+  </g>
+  <g fill="#141b2e">
+    <path d="M330 280 L600 160 L870 280 Z"/><rect x="340" y="280" width="520" height="24"/>
+    ${Array.from({ length: 7 }, (_, i) => `<rect x="${372 + i * 74}" y="304" width="34" height="190"/>`).join('')}
+    <rect x="330" y="494" width="540" height="22"/><rect x="305" y="516" width="590" height="22"/>
+  </g>
+  <circle cx="600" cy="240" r="22" fill="#0c1120"/><rect x="588" y="398" width="24" height="96" fill="#f5c443" opacity=".75"/>
+  <circle cx="200" cy="300" r="70" fill="url(#lg)"/><rect x="196" y="300" width="8" height="300" fill="#0c1120"/><circle cx="200" cy="296" r="12" fill="#f5c443"/>
+  <rect y="538" width="1200" height="62" fill="#0a0e19"/>
+  <g fill="#f5c443" opacity=".15"><rect x="590" y="548" width="20" height="4"/><rect x="585" y="562" width="30" height="3"/><rect x="194" y="550" width="12" height="3"/></g>
+</svg>`;
+
+/* =====================================================================
+   효과: 파티클, 비, 흔들림, 번쩍임, 떠오르는 글자, 화면 전환
+   ===================================================================== */
+const FX = {
+  cv: null, cx: null, p: [], on: false,
+  init() { this.cv = $('#fx'); this.cx = this.cv.getContext('2d'); this.resize(); addEventListener('resize', () => this.resize()); },
+  resize() { const d = Math.min(2, window.devicePixelRatio || 1); this.cv.width = innerWidth * d; this.cv.height = innerHeight * d; this.cx.setTransform(d, 0, 0, d, 0, 0); },
+  burst(x, y, o = {}) {
+    if (reduceMotion() || !this.cx) return;
+    const n = o.n || 24;
+    for (let i = 0; i < n; i++) {
+      const a = (o.angle ?? -Math.PI / 2) + (Math.random() - 0.5) * (o.spread ?? Math.PI * 2);
+      const s = (o.speed || 6) * (0.4 + Math.random() * 0.8);
+      const life = (o.life || 60) * (0.7 + Math.random() * 0.5);
+      this.p.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, g: o.gravity ?? 0.25, life, max: life,
+        size: (o.size || 8) * (0.6 + Math.random() * 0.8), rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+        color: rnd(o.colors || ['#fff']), shape: o.shape || 'rect', drag: o.drag ?? 0.985 });
+    }
+    if (!this.on) { this.on = true; requestAnimationFrame(() => this.tick()); }
+  },
+  confetti() {
+    const cols = ['#ffd84d', '#e5473b', '#86c8ff', '#5fd193', '#ffffff', '#f5a3d9'];
+    this.burst(0, innerHeight * 0.7, { n: 70, colors: cols, speed: 17, angle: -Math.PI / 3, spread: 0.9, gravity: 0.32, life: 140, size: 11 });
+    this.burst(innerWidth, innerHeight * 0.7, { n: 70, colors: cols, speed: 17, angle: -Math.PI * 2 / 3, spread: 0.9, gravity: 0.32, life: 140, size: 11 });
+  },
+  tick() {
+    const c = this.cx;
+    c.clearRect(0, 0, innerWidth, innerHeight);
+    this.p = this.p.filter(q => q.life > 0);
+    for (const q of this.p) {
+      q.vx *= q.drag; q.vy = q.vy * q.drag + q.g; q.x += q.vx; q.y += q.vy; q.rot += q.vr; q.life--;
+      c.globalAlpha = Math.min(1, q.life / (q.max * 0.35));
+      c.fillStyle = q.color; c.strokeStyle = q.color;
+      if (q.shape === 'spark') { c.lineWidth = 3; c.lineCap = 'round'; c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(q.x - q.vx * 3, q.y - q.vy * 3); c.stroke(); }
+      else if (q.shape === 'circle') { c.beginPath(); c.arc(q.x, q.y, q.size / 2, 0, 7); c.fill(); }
+      else if (q.shape === 'shard') { c.save(); c.translate(q.x, q.y); c.rotate(q.rot); c.beginPath(); c.moveTo(0, -q.size / 2); c.lineTo(q.size / 2, q.size / 2); c.lineTo(-q.size / 2, q.size / 3); c.closePath(); c.fill(); c.restore(); }
+      else { c.save(); c.translate(q.x, q.y); c.rotate(q.rot); c.fillRect(-q.size / 2, -q.size / 4, q.size, q.size / 2); c.restore(); }
+    }
+    c.globalAlpha = 1;
+    if (this.p.length) requestAnimationFrame(() => this.tick());
+    else { this.on = false; c.clearRect(0, 0, innerWidth, innerHeight); }
+  }
+};
+
+const Rain = {
+  cv: null, cx: null, drops: [], density: 0,
+  init() {
+    this.cv = $('#rain'); this.cx = this.cv.getContext('2d');
+    const rs = () => { this.cv.width = innerWidth; this.cv.height = innerHeight; };
+    rs(); addEventListener('resize', rs);
+    for (let i = 0; i < 220; i++) this.drops.push(this.newDrop(true));
+    if (!reduceMotion()) requestAnimationFrame(() => this.tick());
+  },
+  newDrop(any) { return { x: Math.random() * innerWidth * 1.2, y: any ? Math.random() * innerHeight : -20, l: 10 + Math.random() * 18, v: 9 + Math.random() * 8 }; },
+  tick() {
+    const c = this.cx, n = Math.floor(this.drops.length * this.density);
+    c.clearRect(0, 0, this.cv.width, this.cv.height);
+    if (n && !document.hidden) {
+      c.strokeStyle = 'rgba(175,195,230,.35)'; c.lineWidth = 1.2; c.beginPath();
+      for (let i = 0; i < n; i++) {
+        const d = this.drops[i];
+        d.x -= d.v * 0.25; d.y += d.v;
+        if (d.y > innerHeight) Object.assign(d, this.newDrop(false));
+        c.moveTo(d.x, d.y); c.lineTo(d.x + d.l * 0.25, d.y - d.l);
+      }
+      c.stroke();
+    }
+    requestAnimationFrame(() => this.tick());
+  }
+};
+
+function shake(big) {
+  if (reduceMotion()) return;
+  const app = $('#app'), cls = big ? 'shake-l' : 'shake-s';
+  app.classList.remove('shake-s', 'shake-l'); void app.offsetWidth; app.classList.add(cls);
+}
+function flash(color = '#fff') {
+  const f = $('#flash'); f.style.background = color;
+  f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+}
+function floatText(x, y, text, bad) {
+  const d = document.createElement('div');
+  d.className = 'float' + (bad ? ' bad' : ''); d.textContent = text;
+  d.style.left = x + 'px'; d.style.top = y + 'px';
+  document.body.appendChild(d); setTimeout(() => d.remove(), 1100);
+}
+let toastTimer = null;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 2600);
+}
+/* 번개 (타이틀·스토리 화면에서 가끔) */
+setInterval(() => {
+  if (!['title', 'story'].includes(screen) || reduceMotion() || document.hidden || Math.random() > 0.45) return;
+  flash('rgba(200,215,255,.55)'); setTimeout(() => flash('rgba(200,215,255,.35)'), 160);
+  sfx.thunder();
+}, 9000);
+
+/* ===== 사건 데이터 검사 (불러오기용) ===== */
+function validateCase(c) {
+  const errs = [];
+  if (!c || typeof c !== 'object' || Array.isArray(c)) return ['JSON 객체 { ... } 형태가 아닙니다.'];
+  ['title', 'briefing', 'culprit'].forEach(k => { if (typeof c[k] !== 'string' || !c[k].trim()) errs.push(`"${k}" 항목이 비어 있습니다.`); });
+  if (!Array.isArray(c.caseFile) || !c.caseFile.length) errs.push('"caseFile"에 사실이 1개 이상 있어야 합니다.');
+  if (!Array.isArray(c.suspects) || c.suspects.length < 2) errs.push('"suspects"에 용의자가 2명 이상 있어야 합니다.');
+  if (!Array.isArray(c.contradictions) || !c.contradictions.length) errs.push('"contradictions"에 정답 모순이 1개 이상 있어야 합니다.');
+  if (!Array.isArray(c.reportSentence) || c.reportSentence.length < 2) errs.push('"reportSentence"에 문장 조각이 2개 이상 있어야 합니다.');
+  if (errs.length) return errs;
+  const ids = new Set();
+  const addId = (id, where) => {
+    if (!id) errs.push(`${where}에 id가 없는 문장이 있습니다.`);
+    else if (ids.has(id)) errs.push(`id "${id}"가 두 번 이상 쓰였습니다.`);
+    else ids.add(id);
+  };
+  c.caseFile.forEach(f => addId(f && f.id, 'caseFile'));
+  c.suspects.forEach(s => {
+    if (!s || !s.name) { errs.push('이름(name)이 없는 용의자가 있습니다.'); return; }
+    if (!Array.isArray(s.statements) || !s.statements.length) errs.push(`${s.name}의 statements가 비어 있습니다.`);
+    else s.statements.forEach(st => addId(st && st.id, s.name));
+  });
+  const checkPair = (p, where) => {
+    if (!Array.isArray(p) || p.length !== 2) { errs.push(`${where}의 pair는 id 두 개여야 합니다.`); return; }
+    p.forEach(id => { if (!ids.has(id)) errs.push(`${where}의 "${id}"를 문장 목록에서 찾을 수 없습니다.`); });
+  };
+  c.contradictions.forEach((x, i) => checkPair(x && x.pair, `contradictions ${i + 1}번`));
+  (c.traps || []).forEach((x, i) => checkPair(x && x.pair, `traps ${i + 1}번`));
+  if (!c.suspects.some(s => s && s.name && s.name.trim().toLowerCase() === c.culprit.trim().toLowerCase()))
+    errs.push(`culprit "${c.culprit}"가 용의자 이름과 일치하지 않습니다.`);
+  return errs;
+}
+function buildIndex(c) {
+  const m = {};
+  c.caseFile.forEach(f => m[f.id] = { id: f.id, text: f.text, who: '사건 파일', file: true, si: -1 });
+  c.suspects.forEach((s, si) => s.statements.forEach(st => m[st.id] = { id: st.id, text: st.text, who: s.name, file: false, si }));
+  return m;
+}
+
+/* ===== 상태 ===== */
+let C = CASE;          // 현재 사건
+let IDX = {};          // id → 문장 정보
+let S = null;          // 진행 상태 (저장됨)
+let screen = 'title';  // 지금 보이는 화면
+let busy = false;      // 연출 중에는 입력 막기
+let pendingAccuse = null;
+let tempMood = null;   // 잠깐 바뀌는 표정 {i, mood, until}
+let flyingSlot = -1;   // 증거 카드가 날아가는 중인 칸 (도착 전까지 비워 둠)
+
+function newState(team) {
+  return {
+    caseTitle: C.title, team: team || '', hearts: MAX_HEARTS, found: [], hintsUsed: 0, elapsed: 0,
+    screen: 'story', storyStep: 0, active: 0, view: 'board', selA: null, selB: null,
+    nabi: null, lensShown: [], trapsHit: [], reportAnswer: [], reportPool: [], reportMistakes: 0, accused: null
+  };
+}
+function save() { if (S) store.set(KEY.prog, S); }
+const isCulprit = i => C.suspects[i].name.trim().toLowerCase() === C.culprit.trim().toLowerCase();
+const culpritIndex = () => C.suspects.findIndex((_, i) => isCulprit(i));
+function heat(i) {
+  const ids = new Set(C.suspects[i].statements.map(s => s.id));
+  return S.found.filter(ci => C.contradictions[ci].pair.some(id => ids.has(id))).length;
+}
+function moodOf(i) {
+  if (tempMood && tempMood.i === i && Date.now() < tempMood.until) return tempMood.mood;
+  return heat(i) ? 'nervous' : 'normal';
+}
+const faceOf = (i, mood) => portraitSVG(lookOf(i), mood || moodOf(i), mood ? (mood === 'shocked' || mood === 'broken' ? 3 : 0) : Math.min(3, heat(i)));
+const voiceOf = i => lookOf(i).voice || 260;
+function speak(pitch, n = 6) { for (let k = 0; k < n; k++) setTimeout(() => sfx.blip(pitch), k * 55); }
+
+/* ===== 화면 전환 ===== */
+const SCREENS = ['title', 'story', 'inv', 'accuse', 'report', 'result', 'fail', 'bad'];
+function show(name) {
+  screen = name;
+  SCREENS.forEach(n => $('#s-' + n).hidden = n !== name);
+  $('#hud').hidden = !RUNNING.includes(name);
+  if (S && name !== 'title') { S.screen = name; save(); }
+  Rain.density = { title: 0.8, story: 0.7, fail: 1, bad: 0.6 }[name] || 0;
+  document.body.classList.toggle('danger', name === 'inv' && S && S.hearts <= 2);
+  window.scrollTo(0, 0);
+  ({ title: renderTitle, story: renderStory, inv: enterInv, accuse: renderAccuse,
+     report: renderReport, result: renderResult, fail: renderFail, bad: renderBad })[name]();
+  if (RUNNING.includes(name)) renderHUD();
+}
+async function go(name) {
+  if (reduceMotion()) { show(name); return; }
+  const w = $('#wipe');
+  sfx.whoosh();
+  w.className = ''; void w.offsetWidth; w.className = 'in';
+  await new Promise(r => setTimeout(r, 290));
+  show(name);
+  w.className = 'out';
+  setTimeout(() => { if (w.className === 'out') { w.className = ''; } }, 320);
+}
+
+/* ===== 1. 타이틀 ===== */
+function renderTitle() {
+  $('#title-bg').innerHTML = MUSEUM_SVG;
+  $('#title-big').innerHTML = [...'진술서 탐정'].map((ch, i) => ch === ' ' ? ' ' : `<span style="--i:${i}">${ch}</span>`).join('');
+  $('#title-case').textContent = 'Case: ' + C.title;
+  $('#title-sil').innerHTML = C.suspects.slice(0, 4).map((_, i) =>
+    `<div class="sil-wrap" style="width:22%; max-width:90px"><div class="sil" style="--i:${i}; width:100%">${portraitSVG(lookOf(i))}</div><span class="sil-q">?</span></div>`).join('');
+  $('#title-nabi').innerHTML = nabiSVG('worried');
+  if (S && S.team) $('#team-name').value = S.team;
+  const canResume = S && ['story', 'inv', 'accuse', 'report'].includes(S.screen);
+  $('#btn-resume').hidden = !canResume;
+  $('#resume-note').hidden = !canResume;
+  if (canResume) $('#resume-note').textContent = `저장된 수사: 증거 ${S.found.length}/${C.contradictions.length}, 신뢰도 ${S.hearts}, 시간 ${fmt(S.elapsed)}`;
+  renderMute();
+}
+
+/* ===== 2. 스토리 (비주얼 노벨) ===== */
+let story = [], typing = null;
+function storyScript() {
+  const s = [];
+  s.push({ who: 'nabi', mood: 'surprised', text: '탐정님, 큰일 났어요! 사건이 터졌어요!' });
+  (C.briefing.match(/[^.!?]+[.!?]+["']?|[^.!?]+$/g) || [C.briefing]).map(t => t.trim()).filter(Boolean)
+    .forEach((t, i) => s.push({ who: 'nabi', mood: i === 0 ? 'worried' : 'normal', text: t, en: true }));
+  s.push({ who: 'nabi', mood: 'normal', text: '그날 밤 현장 근처에 있던 용의자들을 소개할게요.' });
+  C.suspects.forEach((p, i) => s.push({ intro: i, text: `${p.name}. ${p.role || ''}`.trim(), en: true }));
+  s.push({ who: 'nabi', mood: 'happy', text: '증거 보드의 사실과 용의자들의 말을 비교해서, 동시에 사실일 수 없는 두 문장을 찾아 주세요.' });
+  s.push({ who: 'nabi', mood: 'worried', text: '두 문장을 고르고 OBJECTION!을 누르면 돼요. 틀리면 신뢰도 하트가 깨지니까 조심!' });
+  s.push({ who: 'nabi', mood: 'happy', text: `모순 ${C.contradictions.length}개를 모두 찾으면 범인을 지목할 수 있어요. 수사 시작!` });
+  return s;
+}
+function renderStory() {
+  $('#story-bg').innerHTML = MUSEUM_SVG;
+  story = storyScript();
+  if (S.storyStep >= story.length) S.storyStep = 0;
+  storyShow(S.storyStep);
+}
+function storyShow(n) {
+  const st = story[n];
+  S.storyStep = n; save();
+  $('#vn-prog').innerHTML = story.map((_, i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('');
+  const stage = $('#vn-stage');
+  let pitch = 720;
+  if (st.intro != null) {
+    const p = C.suspects[st.intro];
+    pitch = voiceOf(st.intro);
+    stage.innerHTML = `<div class="intro"><div class="intro-face breathe">${faceOf(st.intro, 'normal')}</div>
+      <div class="intro-txt"><div class="intro-no">SUSPECT ${String(st.intro + 1).padStart(2, '0')}</div><div class="intro-name">${esc(p.name)}</div><span class="intro-role">${esc(p.role || '')}</span></div></div>`;
+    $('#vn-name').textContent = p.name;
+    sfx.slam();
+    shake(false);
+  } else {
+    stage.innerHTML = `<div class="vn-nabi hop">${nabiSVG(st.mood)}</div>`;
+    $('#vn-name').textContent = '나비 경감';
+    if (st.mood === 'surprised') { shake(true); sfx.stamp(); }
+  }
+  typeText($('#vn-text'), st.text, pitch, st.en);
+}
+function typeText(el, text, pitch, en) {
+  clearInterval(typing && typing.t);
+  el.classList.toggle('en', !!en);
+  const finish = () => { clearInterval(typing.t); el.innerHTML = en ? gloss(text, true) : esc(text); typing = null; };
+  if (reduceMotion()) { typing = { t: 0, finish }; finish(); return; }
+  let i = 0;
+  el.textContent = '';
+  typing = { t: setInterval(() => {
+    i++; el.textContent = text.slice(0, i);
+    if (i % 2 === 0 && text[i - 1] !== ' ') sfx.blip(pitch);
+    if (i >= text.length) finish();
+  }, 26), finish };
+}
+function storyNext() {
+  if (busy) return;
+  if (typing) { typing.finish(); return; }
+  if (S.storyStep + 1 >= story.length) { go('inv'); return; }
+  sfx.click();
+  storyShow(S.storyStep + 1);
+}
+
+/* ===== 상단 정보줄 ===== */
+function renderHUD() {
+  const total = C.contradictions.length;
+  $('#hud-face').innerHTML = nabiSVG('normal');
+  $('#hud-team').textContent = S.team || '수사팀';
+  $('#hud-case').textContent = C.title;
+  const h = $('#hud-hearts');
+  h.innerHTML = Array.from({ length: MAX_HEARTS }, (_, i) => HEART_SVG.replace('class="heart"', `class="heart${i < S.hearts ? ' on' : ''}"`)).join('');
+  h.setAttribute('aria-label', `신뢰도 ${S.hearts} / ${MAX_HEARTS}`);
+  $('#hud-ex').innerHTML = C.contradictions.map((_, i) => `<span class="ex${i < S.found.length && i !== flyingSlot ? ' on' : ''}">${letter(i)}</span>`).join('');
+  $('#hud-ex').setAttribute('aria-label', `증거 ${S.found.length} / ${total}`);
+  $('#hint-left').textContent = MAX_HINTS - S.hintsUsed;
+  $('#btn-hint').disabled = S.hintsUsed >= MAX_HINTS || S.found.length >= total || screen !== 'inv';
+  const ready = S.found.length >= total;
+  const acc = $('#btn-accuse');
+  acc.disabled = !ready || screen !== 'inv';
+  acc.classList.toggle('ready', ready && screen === 'inv');
+  acc.textContent = ready ? '범인 지목!' : `범인 지목 ${S.found.length}/${total}`;
+  $('#hud-time').textContent = fmt(S.elapsed);
+  document.body.classList.toggle('danger', screen === 'inv' && S.hearts <= 2);
+  renderMute();
+}
+function renderMute() { $$('.btn-mute').forEach(b => b.innerHTML = (muted ? SPK_OFF : SPK_ON) + (muted ? '소리 꺼짐' : '소리 켜짐')); }
+
+/* ===== 3. 조사 화면 ===== */
+function enterInv() {
+  renderInv(true);
+  if (!S.nabi) nabiSay('증거 보드의 사실과 용의자의 말을 비교해서, 서로 맞지 않는 두 문장을 골라 보세요!', 'happy');
+  else nabiSay(S.nabi.text, S.nabi.mood, true);
+}
+const noteHTML = (st, i) => `<button class="line note" data-id="${esc(st.id)}" style="--r:${[-1.2, 0.9, -0.6, 1.2, -0.9][i % 5]}deg"><span class="pin"></span><span class="lid">${esc(st.id)}</span><span>${gloss(st.text)}</span></button>`;
+const bubbleHTML = (st, i) => `<button class="line bubble" data-id="${esc(st.id)}" style="--d:${i * 90}ms"><span class="lid">${esc(st.id)}</span><span>${gloss(st.text)}</span></button>`;
+
+function renderInv(animate) {
+  $('#s-inv').dataset.view = S.view;
+  $$('.inv-switch button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.view === S.view)));
+  $('#file-lines').innerHTML = C.caseFile.map(noteHTML).join('');
+  if (S.active >= C.suspects.length) S.active = 0;
+  renderTabs();
+  renderRoom(animate);
+  renderSel();
+}
+function renderTabs() {
+  $('#suspect-tabs').innerHTML = C.suspects.map((s, i) => {
+    const h = Math.min(3, heat(i));
+    return `<button class="sus" role="tab" aria-selected="${i === S.active}" data-i="${i}">
+      <span class="sus-face">${faceOf(i)}</span>
+      <span class="sus-txt"><span class="sus-name">${esc(s.name)}</span><span class="sus-role">${esc(s.role || '')}</span></span>
+      ${h ? `<span class="heat" title="땀 흘리는 중">${DROP_SVG.repeat(h)}</span>` : ''}</button>`;
+  }).join('');
+}
+function renderRoom(animate) {
+  const i = S.active, s = C.suspects[i];
+  const face = $('#room-face');
+  const mood = moodOf(i);
+  face.innerHTML = `<div class="${mood === 'nervous' ? 'tremble' : 'breathe'}">${faceOf(i)}</div>`;
+  face.classList.remove('enter');
+  if (animate) { void face.offsetWidth; face.classList.add('enter'); }
+  $('#room-name').innerHTML = `<b>${esc(s.name)}</b><span>${esc(s.role || '')}</span>`;
+  $('#room-bubbles').innerHTML = s.statements.map(animate ? bubbleHTML : (st) => bubbleHTML(st, 0).replace(/style="--d:0ms"/, 'style="animation:none"')).join('');
+}
+function switchSuspect(i) {
+  if (i === S.active) return;
+  S.active = i; save();
+  renderTabs(); renderRoom(true); renderSel();
+  speak(voiceOf(i), 5);
+}
+
+function renderSel() {
+  const used = new Set(S.found.flatMap(ci => C.contradictions[ci].pair));
+  $$('.line').forEach(el => {
+    const id = el.dataset.id;
+    el.classList.toggle('sel-a', id === S.selA);
+    el.classList.toggle('sel-b', id === S.selB);
+    el.classList.toggle('used', used.has(id));
+    el.setAttribute('aria-pressed', String(id === S.selA || id === S.selB));
+  });
+  const slot = (sel, id, tag, empty) => {
+    const el = $(sel), info = id && IDX[id];
+    el.classList.toggle('filled', !!info);
+    el.innerHTML = `<span class="slot-tag">${tag}</span>` + (info
+      ? `<span class="slot-body"><span class="slot-who">${esc(info.who)} · ${esc(info.id)}</span><span class="slot-text">${esc(info.text)}</span></span>`
+      : `<span class="slot-body">${empty}</span>`);
+  };
+  slot('#slot-a', S.selA, 'A', '첫 번째 문장');
+  slot('#slot-b', S.selB, 'B', '두 번째 문장');
+  const ready = !!(S.selA && S.selB);
+  $('#btn-obj').disabled = !ready;
+  $('#btn-obj').classList.toggle('ready', ready);
+}
+
+/* 나비 경감 말풍선 */
+let nabiTyping = null;
+function nabiSay(text, mood = 'normal', quiet) {
+  S.nabi = { text, mood }; save();
+  const face = $('#nabi-face');
+  face.innerHTML = `<div class="hop">${nabiSVG(mood)}</div>`;
+  const el = $('#nabi-text');
+  clearInterval(nabiTyping);
+  if (quiet || reduceMotion()) { el.textContent = text; return; }
+  let i = 0; el.textContent = '';
+  nabiTyping = setInterval(() => {
+    i += 2; el.textContent = text.slice(0, i);
+    if (i % 4 === 0) sfx.blip(760);
+    if (i >= text.length) { clearInterval(nabiTyping); el.textContent = text; }
+  }, 22);
+}
+
+/* 문장 고르기: 첫 번째 = A(노랑), 두 번째 = B(파랑). 다시 누르면 해제 */
+function pick(id, ev) {
+  if (S.selA === id) { S.selA = S.selB; S.selB = null; sfx.deselect(); }
+  else if (S.selB === id) { S.selB = null; sfx.deselect(); }
+  else {
+    if (!S.selA) S.selA = id; else S.selB = id;
+    sfx.select();
+    if (ev && ev.clientX) FX.burst(ev.clientX, ev.clientY, { n: 10, shape: 'spark', colors: [S.selB === id ? '#86c8ff' : '#ffd84d', '#fff'], speed: 6, gravity: 0, life: 18 });
+  }
+  renderSel(); save();
+  if (S.selA && S.selB) nabiSay('준비 완료! OBJECTION!을 외쳐요!', 'surprised', false);
+}
+function clearSel() { S.selA = S.selB = null; renderSel(); save(); }
+
+function defaultHint(a, b) {
+  const A = IDX[a], B = IDX[b];
+  if (A.file && B.file) return '증거 보드의 사실끼리는 모두 확인된 사실이라 서로 모순되지 않아요.';
+  if (A.who === B.who) return '같은 사람의 두 말이에요. 정말 동시에 사실일 수 없을까요? 다시 읽어 봐요.';
+  return '두 문장은 동시에 사실일 수 있어요. 누가, 언제, 어디서에 대한 말인지 하나씩 비교해 봐요.';
+}
+function speakerOf(a, b) {
+  const si = [IDX[a], IDX[b]].filter(x => !x.file).map(x => x.si);
+  if (!si.length) return -1;
+  return si.find(isCulprit) ?? si[0];
+}
+const cutCardHTML = (id, tag) => { const x = IDX[id]; return `<span class="cw"><span class="ct">${tag}</span>${esc(x.who)} · ${esc(x.id)}</span>${esc(x.text)}`; };
+
+/* OBJECTION! 판정 + 컷신 */
+async function objection() {
+  if (busy || !S.selA || !S.selB) return;
+  const a = S.selA, b = S.selB, key = pk(a, b);
+  const ci = C.contradictions.findIndex(c => pk(c.pair[0], c.pair[1]) === key);
+  if (ci >= 0 && S.found.includes(ci)) { nabiSay('이미 확보한 증거예요! 다른 모순을 찾아봐요.', 'worried'); clearSel(); return; }
+  busy = true;
+  const rm = reduceMotion();
+  const cut = $('#cut'), word = $('#cut-word'), ca = $('#cut-a'), cb = $('#cut-b'), who = $('#cut-who'), ver = $('#cut-verdict');
+  word.className = 'cut-word'; ca.className = 'cut-card a'; cb.className = 'cut-card b'; who.className = 'cut-who'; ver.className = 'cut-verdict';
+  cut.classList.remove('miss');
+  ca.innerHTML = cutCardHTML(a, 'A'); cb.innerHTML = cutCardHTML(b, 'B');
+  cut.hidden = false;
+  sfx.objection(); flash('#fff'); shake(true);
+  word.classList.add('slam');
+  await sleep(rm ? 200 : 750);
+  word.classList.add('out');
+  ca.classList.add('in'); cb.classList.add('in'); sfx.whoosh();
+  await sleep(rm ? 100 : 520);
+  const r1 = ca.getBoundingClientRect(), r2 = cb.getBoundingClientRect();
+  const mx = (r1.left + r1.width / 2 + r2.left + r2.width / 2) / 2, my = (r1.top + r1.height / 2 + r2.top + r2.height / 2) / 2;
+  sfx.clash();
+  FX.burst(mx, my, { n: 36, shape: 'spark', colors: ['#ffd84d', '#fff', '#ff8a3d'], speed: 13, gravity: 0, life: 28 });
+  ca.classList.add('hit'); cb.classList.add('hit');
+  await sleep(rm ? 50 : 260);
+  const correct = ci >= 0;
+  const spk = speakerOf(a, b);
+  if (correct) {
+    ca.classList.add('match'); cb.classList.add('match');
+    ver.textContent = 'CONTRADICTION!'; ver.classList.add('show');
+    sfx.slam(); sfx.correct(); shake(false); flash('rgba(229,71,59,.35)');
+    FX.confetti();
+    if (spk >= 0) { $('#cut-face').innerHTML = `<div class="tremble">${faceOf(spk, 'shocked')}</div>`; $('#cut-say').textContent = rnd(LINES.shocked); speak(voiceOf(spk), 7); }
+    else { $('#cut-face').innerHTML = nabiSVG('happy'); $('#cut-say').textContent = '찾았다!'; }
+  } else {
+    cut.classList.add('miss');
+    ca.classList.add('repel'); cb.classList.add('repel');
+    ver.textContent = 'NO CONTRADICTION'; ver.classList.add('show', 'miss');
+    sfx.wrong();
+    if (spk >= 0) { $('#cut-face').innerHTML = faceOf(spk, 'smug'); $('#cut-say').textContent = rnd(LINES.smug); speak(voiceOf(spk), 7); }
+    else { $('#cut-face').innerHTML = nabiSVG('worried'); $('#cut-say').textContent = '음… 둘 다 사실 같은데요?'; }
+  }
+  who.classList.add('show');
+  await sleep(rm ? 500 : 1500);
+  cut.hidden = true;
+  S.selA = S.selB = null;
+  if (correct) {
+    S.found.push(ci);
+    flyingSlot = S.found.length - 1;
+    if (spk >= 0) tempMood = { i: spk, mood: 'shocked', until: Date.now() + 2500 };
+    save(); renderInv(false); renderHUD();
+    openCard(ci);
+  } else {
+    const trap = (C.traps || []).find(t => pk(t.pair[0], t.pair[1]) === key);
+    if (trap && !S.trapsHit.includes(key)) S.trapsHit.push(key);
+    if (spk >= 0) tempMood = { i: spk, mood: 'smug', until: Date.now() + 2500 };
+    renderInv(false);
+    await loseHeart();
+    if (S.hearts <= 0) { busy = false; nabiSay('으앙… 신뢰도가 바닥났어요.', 'sad'); await sleep(900); go('fail'); return; }
+    nabiSay(trap ? trap.hint : defaultHint(a, b), 'worried');
+    if (S.hearts === 1) setTimeout(() => toast('조심! 한 번만 더 틀리면 수사 실패예요.'), 400);
+  }
+  setTimeout(() => { if (screen === 'inv') { renderTabs(); renderRoom(false); renderSel(); } }, 2600);
+  busy = false;
+}
+async function loseHeart() {
+  const hs = $$('#hud-hearts .heart.on');
+  const last = hs[hs.length - 1];
+  sfx.heartbreak(); flash('rgba(229,71,59,.45)'); shake(true);
+  if (last) {
+    const r = last.getBoundingClientRect();
+    last.classList.add('breaking');
+    FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 16, shape: 'shard', colors: ['#e5473b', '#ff8b80', '#9c261e'], speed: 6, gravity: 0.4, life: 55, size: 10 });
+    floatText(r.left, r.bottom, '-1', true);
+  }
+  S.hearts = Math.max(0, S.hearts - 1);
+  save();
+  await sleep(450);
+  renderHUD();
+}
+
+/* 돋보기: 아직 못 찾은 모순이 있는 사람 알려주기 */
+function useLens() {
+  if (busy || S.hintsUsed >= MAX_HINTS) return;
+  const unfound = C.contradictions.map((_, i) => i).filter(i => !S.found.includes(i));
+  if (!unfound.length) return;
+  const names = [];
+  unfound.forEach(i => C.contradictions[i].pair.forEach(id => {
+    const w = IDX[id];
+    if (w && !w.file && !names.includes(w.who)) names.push(w.who);
+  }));
+  const name = names.find(n => !S.lensShown.includes(n)) || names[0] || '증거 보드';
+  S.lensShown.push(name);
+  S.hintsUsed++;
+  const r = $('#btn-hint').getBoundingClientRect();
+  FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 18, shape: 'circle', colors: ['#f5c443', '#fff'], speed: 5, gravity: 0, life: 30, size: 6 });
+  sfx.pop();
+  nabiSay(`킁킁… ${name} 쪽에서 수상한 냄새가 나요! 아직 찾지 못한 모순이 있어요.`, 'surprised');
+  renderHUD();
+  const si = C.suspects.findIndex(s => s.name === name);
+  if (si >= 0) { S.view = 'room'; switchSuspect(si); renderInv(false); }
+}
+
+/* 증거 카드 */
+function avatarFor(id) {
+  const x = IDX[id];
+  return x.file ? `<div class="q-av file">${FILE_ICON}</div>` : `<div class="q-av">${faceOf(x.si)}</div>`;
+}
+function openCard(ci) {
+  const c = C.contradictions[ci];
+  const n = S.found.indexOf(ci);
+  const [A, B] = c.pair.map(id => IDX[id]);
+  $('#card-body').innerHTML = `
+    <div class="card-top"><span class="card-stamp">EXHIBIT ${letter(n)}</span><span class="chip">${esc(c.type || '모순')}</span></div>
+    <h3 class="card-title">모순 발견!</h3>
+    <div class="q a">${avatarFor(A.id)}<div><span class="q-who">${esc(A.who)} · ${esc(A.id)}</span>${esc(A.text)}</div></div>
+    <div class="vs">VS</div>
+    <div class="q b">${avatarFor(B.id)}<div><span class="q-who">${esc(B.who)} · ${esc(B.id)}</span>${esc(B.text)}</div></div>
+    <div class="expl"><b>해설</b><p>${esc(c.explanation || '')}</p></div>
+    <div class="gp"><span class="gp-k">문법 포인트</span>${esc(c.grammarPoint || '')}</div>
+    <div class="row"><button class="btn primary" id="card-ok">증거 보관함에 넣기 ▶</button></div>`;
+  $('#m-card').hidden = false;
+  sfx.pop();
+  setTimeout(() => sfx.stamp(), 380);
+  $('#card-ok').focus();
+  $('#card-ok').onclick = () => closeCard(n);
+}
+function closeCard(n) {
+  const card = $('#card-body'), slot = $$('#hud-ex .ex')[n];
+  const done = S.found.length >= C.contradictions.length;
+  const after = () => {
+    flyingSlot = -1;
+    renderHUD();
+    const slot = $$('#hud-ex .ex')[n];
+    if (slot) {
+      slot.classList.remove('pop'); void slot.offsetWidth; slot.classList.add('pop');
+      const r = slot.getBoundingClientRect();
+      FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 20, shape: 'circle', colors: ['#f5c443', '#fff', '#e5473b'], speed: 6, gravity: 0.1, life: 35, size: 6 });
+      floatText(r.left, r.bottom + 4, '+1');
+    }
+    sfx.pop();
+    if (done) {
+      sfx.bell();
+      nabiSay('증거가 전부 모였어요! 위의 [범인 지목!] 버튼을 눌러요!', 'surprised');
+      renderHUD();
+    } else {
+      const left = C.contradictions.length - S.found.length;
+      nabiSay(`${rnd(NABI_CHEER)} 남은 모순은 ${left}개예요.`, 'happy');
+    }
+  };
+  if (!slot || reduceMotion() || slot.getBoundingClientRect().bottom < 0) { $('#m-card').hidden = true; after(); return; }
+  const r = card.getBoundingClientRect(), t = slot.getBoundingClientRect();
+  const g = document.createElement('div');
+  g.className = 'fly'; g.textContent = letter(n);
+  Object.assign(g.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+  document.body.appendChild(g);
+  $('#m-card').hidden = true;
+  sfx.whoosh();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    g.style.transform = `translate(${t.left - r.left}px, ${t.top - r.top}px) scale(${t.width / r.width}, ${t.height / r.height}) rotate(-8deg)`;
+  }));
+  setTimeout(() => { g.remove(); after(); }, 620);
+}
+
+/* ===== 4. 범인 지목 ===== */
+function renderAccuse() {
+  pendingAccuse = null;
+  $('#lineup').innerHTML = C.suspects.map((s, i) =>
+    `<button class="suspect-card" data-i="${i}"><div class="lu-face"><div class="breathe">${faceOf(i)}</div></div><span class="plate">No. ${String(i + 1).padStart(2, '0')}</span><span class="sus-name">${esc(s.name)}</span><span class="sus-role">${esc(s.role || '')}</span></button>`).join('');
+  $('#accuse-confirm').hidden = true;
+  $('#accuse-verdict').hidden = true;
+  $('#accuse-back').hidden = false;
+  sfx.heartbeat();
+}
+function askAccuse(i) {
+  if (busy) return;
+  pendingAccuse = i;
+  sfx.select();
+  $$('.suspect-card').forEach(el => el.classList.toggle('chosen', +el.dataset.i === i));
+  $('#accuse-q').innerHTML = `<b>${esc(C.suspects[i].name)}</b>, 이 사람이 범인이다! 지목하면 되돌릴 수 없어요.`;
+  $('#accuse-confirm').hidden = false;
+  $('#accuse-confirm').scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'nearest' });
+}
+async function confirmAccuse() {
+  if (busy || pendingAccuse == null) return;
+  busy = true;
+  const i = pendingAccuse, name = C.suspects[i].name;
+  S.accused = name; save();
+  $('#accuse-confirm').hidden = true;
+  $('#accuse-back').hidden = true;
+  const cards = $$('.suspect-card');
+  cards.forEach(el => { el.classList.toggle('dim', +el.dataset.i !== i); el.classList.toggle('chosen', +el.dataset.i === i); });
+  const card = cards[i], face = card.querySelector('.lu-face');
+  card.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' });
+  sfx.drumroll(1.7);
+  for (let k = 0; k < 4; k++) setTimeout(() => sfx.heartbeat(), k * 420);
+  face.innerHTML = `<div class="tremble">${faceOf(i, 'nervous')}</div>`;
+  await sleep(reduceMotion() ? 300 : 1800);
+  const r = card.getBoundingClientRect();
+  const say = t => { const b = document.createElement('div'); b.className = 'lu-say'; b.textContent = t; face.appendChild(b); speak(voiceOf(i), 8); };
+  const stamp = $('#verdict-stamp');
+  $('#accuse-verdict').hidden = false;
+  if (isCulprit(i)) {
+    face.innerHTML = `<div class="jolt">${faceOf(i, 'broken')}</div>`;
+    say(rnd(LINES.guilty));
+    stamp.textContent = 'GUILTY!'; stamp.className = 'verdict-stamp';
+    sfx.slam(); sfx.fanfare(); flash('#fff'); shake(true);
+    FX.confetti();
+    FX.burst(r.left + r.width / 2, r.top + r.height / 3, { n: 40, shape: 'spark', colors: ['#ffd84d', '#fff'], speed: 14, gravity: 0, life: 30 });
+    $('#accuse-next').hidden = false;
+    busy = false;
+  } else {
+    face.innerHTML = `<div class="jolt">${faceOf(i, 'angry')}</div>`;
+    say(rnd(LINES.innocent));
+    stamp.textContent = 'NOT GUILTY'; stamp.className = 'verdict-stamp miss';
+    $('#accuse-next').hidden = true;
+    sfx.wrong(); setTimeout(() => sfx.sad(), 300); shake(true);
+    await sleep(2200);
+    busy = false;
+    go('bad');
+  }
+}
+
+/* ===== 5. 사건 보고서 (단어 조각 배열) ===== */
+function setupReport() {
+  const n = C.reportSentence.length;
+  const order = [...Array(n).keys()];
+  do { shuffle(order); } while (n > 1 && order.every((v, i) => v === i));
+  S.reportPool = order; S.reportAnswer = []; save();
+}
+function renderReport(noAnim) {
+  $('#rep-case').textContent = C.title;
+  if (!S.reportPool.length && !S.reportAnswer.length) setupReport();
+  const tile = i => `<span class="tile" draggable="true" role="button" tabindex="0" data-i="${i}"${noAnim ? ' style="animation:none"' : ''}>${esc(C.reportSentence[i])}</span>`;
+  $('#rep-answer').innerHTML = S.reportAnswer.map(tile).join('');
+  $('#rep-pool').innerHTML = S.reportPool.map(tile).join('');
+  $$('#report-paper .closed-stamp').forEach(e => e.remove());
+}
+function moveTile(i, zone, beforeI) {
+  if (busy) return;
+  S.reportAnswer = S.reportAnswer.filter(x => x !== i);
+  S.reportPool = S.reportPool.filter(x => x !== i);
+  const arr = zone === 'answer' ? S.reportAnswer : S.reportPool;
+  const at = beforeI == null ? -1 : arr.indexOf(beforeI);
+  if (at < 0) arr.push(i); else arr.splice(at, 0, i);
+  $('#rep-msg').textContent = '';
+  sfx.clack(); save(); renderReport(true);
+  const moved = document.querySelector(`#rep-${zone === 'answer' ? 'answer' : 'pool'} .tile[data-i="${i}"]`);
+  if (moved && !reduceMotion()) { moved.style.animation = 'bubbleIn .3s cubic-bezier(.3,1.6,.5,1)'; }
+}
+async function checkReport() {
+  if (busy) return;
+  const msg = $('#rep-msg'), parts = C.reportSentence;
+  if (S.reportAnswer.length < parts.length) { msg.className = 'rep-msg bad'; msg.textContent = '조각을 모두 사용해야 합니다.'; sfx.deselect(); return; }
+  if (S.reportAnswer.map(i => parts[i]).join(' ') === parts.join(' ')) {
+    busy = true;
+    msg.className = 'rep-msg ok'; msg.textContent = '보고서 접수 완료!';
+    const st = document.createElement('div'); st.className = 'closed-stamp'; st.textContent = 'CASE CLOSED';
+    $('#report-paper').appendChild(st);
+    sfx.slam(); sfx.stamp(); sfx.bell(); shake(true); FX.confetti();
+    await sleep(reduceMotion() ? 400 : 1600);
+    busy = false;
+    go('result');
+  } else {
+    S.reportMistakes++;
+    msg.className = 'rep-msg bad';
+    msg.textContent = '순서가 맞지 않아요. 누가(주어) → 무엇을 했는지(동사) → 이유 순서로 생각해 보세요.';
+    sfx.wrong(); shake(false); save();
+  }
+}
+
+/* ===== 6. 결과 ===== */
+function calcScore() {
+  const lost = MAX_HEARTS - S.hearts;
+  const timePen = Math.min(20, Math.floor(Math.max(0, S.elapsed - TIME_PAR) / 30));
+  const score = Math.max(0, 100 - lost * 12 - S.hintsUsed * 8 - S.reportMistakes * 5 - timePen);
+  return { score, grade: score >= 88 ? 'S' : score >= 70 ? 'A' : score >= 50 ? 'B' : 'C' };
+}
+const GRADE = {
+  S: ['명탐정', '완벽해요! 탐정님은 진짜 명탐정이에요!', 'happy'],
+  A: ['베테랑 형사', '훌륭해요! 거의 완벽한 수사였어요.', 'happy'],
+  B: ['신입 형사', '잘했어요! 다음엔 함정 문장을 더 조심해 봐요.', 'normal'],
+  C: ['수습 탐정', '사건은 해결했어요! 다음엔 더 꼼꼼히 읽어 봐요.', 'worried']
+};
+function renderResult() {
+  const { score, grade } = calcScore();
+  const [title, line, mood] = GRADE[grade];
+  const g = $('#res-grade');
+  g.textContent = grade; g.classList.remove('show');
+  $('#res-title').textContent = 'CASE CLOSED';
+  $('#res-sub').textContent = `${S.team ? S.team + ' · ' : ''}${title} · ${C.title}`;
+  $('#res-nabi').innerHTML = nabiSVG(mood);
+  $('#res-say').textContent = line;
+  const stat = (k, v, d, id) => `<div class="res-stat" style="--d:${d}ms"><span>${k}</span><b${id ? ` id="${id}"` : ''}>${v}</b></div>`;
+  $('#res-stats').innerHTML =
+    stat('점수', `0`, 300, 'res-score') + stat('남은 신뢰도', `${S.hearts} / ${MAX_HEARTS}`, 420) +
+    stat('걸린 시간', fmt(S.elapsed), 540) + stat('돋보기 사용', `${S.hintsUsed}회`, 660) + stat('보고서 재시도', `${S.reportMistakes}회`, 780);
+  $('#res-ex').innerHTML = S.found.map((ci, n) => {
+    const c = C.contradictions[ci];
+    return `<div class="res-item"><span class="tag">EXHIBIT ${letter(n)} · ${esc(c.type || '')}</span>
+      <p class="pair">${c.pair.map(id => `${esc(id)} “${esc(IDX[id].text)}”`).join('<br>')}</p>
+      <div class="gp"><span class="gp-k">문법 포인트</span>${esc(c.grammarPoint || '')}</div></div>`;
+  }).join('');
+  $('#res-traps').innerHTML = (C.traps || []).map(t => {
+    const hit = S.trapsHit.includes(pk(t.pair[0], t.pair[1]));
+    return `<div class="res-item"><span class="tag">TRAP${hit ? '<span class="hit">우리 팀이 걸린 함정</span>' : ''}</span>
+      <p class="pair">${t.pair.map(id => `${esc(id)} “${esc(IDX[id].text)}”`).join('<br>')}</p>
+      <p>${esc(t.hint || '')}</p></div>`;
+  }).join('') || '<p style="color:var(--fg-dim)">이 사건에는 함정 문장이 없습니다.</p>';
+  store.del(KEY.prog);
+  // 연출: 등급 도장 → 점수 카운트업 → 꽃가루
+  setTimeout(() => { g.classList.add('show'); sfx.slam(); shake(true); if (grade === 'S' || grade === 'A') { FX.confetti(); sfx.fanfare(); } }, 450);
+  const el = () => $('#res-score');
+  if (reduceMotion()) { el().textContent = `${score} / 100`; return; }
+  let v = 0;
+  setTimeout(() => {
+    const t = setInterval(() => {
+      v = Math.min(score, v + Math.max(1, Math.ceil(score / 30)));
+      if (el()) el().textContent = `${v} / 100`;
+      sfx.tick();
+      if (v >= score) clearInterval(t);
+    }, 30);
+  }, 700);
+}
+function renderFail() {
+  $('#fail-nabi').innerHTML = nabiSVG('sad');
+  $('#fail-found').textContent = S.found.length ? `찾은 증거: ${S.found.length} / ${C.contradictions.length}개` : '';
+  sfx.sad();
+  store.del(KEY.prog);
+}
+function renderBad() {
+  const ai = C.suspects.findIndex(s => s.name === S.accused), ci = culpritIndex();
+  $('#bad-faces').innerHTML =
+    (ai >= 0 ? `<div class="end-face"><div class="lu-face">${faceOf(ai, 'angry')}<div class="lu-say">${esc(rnd(LINES.innocent))}</div></div><span class="plate">${esc(C.suspects[ai].name)}</span></div>` : '') +
+    (ci >= 0 ? `<div class="end-face"><div class="lu-face">${faceOf(ci, 'smug')}<div class="lu-say">${esc(rnd(LINES.escape))}</div></div><span class="plate">${esc(C.suspects[ci].name)}</span></div>` : '');
+  $('#bad-body').innerHTML = `
+    <h2>오인 체포! 진범이 달아났어요…</h2>
+    <p>체포한 사람은 <b>${esc(S.accused || '')}</b>였지만, 진범은 <b>${esc(C.culprit)}</b>였습니다. 모은 증거들이 누구의 말과 연결되어 있었는지 다시 확인해 보세요.</p>
+    ${C.contradictions.map((c, n) => `<div class="gp"><span class="gp-k">EXHIBIT ${letter(n)} · ${esc(c.type || '')}</span>${esc(c.explanation || '')}</div>`).join('')}`;
+  store.del(KEY.prog);
+}
+
+/* ===== 시작 / 다시 하기 / 불러오기 ===== */
+function startNew() {
+  audio(); startRainSound();
+  S = newState($('#team-name').value.trim());
+  save();
+  sfx.objection(); flash('#fff');
+  go('story');
+}
+function restart() { S = newState(S ? S.team : ''); tempMood = null; save(); go('story'); }
+function loadCase(c) {
+  C = c; IDX = buildIndex(C);
+  S = null; store.del(KEY.prog);
+  $$('.modal').forEach(m => m.hidden = true);
+  show('title');
+}
+function closeModals() {
+  if (!$('#m-card').hidden) { $('#card-ok') && $('#card-ok').click(); return; }
+  $$('.modal').forEach(m => m.hidden = true);
+}
+
+/* ===== 이벤트 연결 ===== */
+document.addEventListener('click', e => {
+  audio();
+  if (!$('#cut').hidden) { skipNow && skipNow(); return; }
+  if (e.target.closest('#vn-scene') && !e.target.closest('#vn-skip, .gl')) { storyNext(); return; }
+  if (busy) return;
+  const line = e.target.closest('.line');
+  if (line && screen === 'inv') { pick(line.dataset.id, e); return; }
+  const sus = e.target.closest('.sus');
+  if (sus) { switchSuspect(+sus.dataset.i); return; }
+  const sw = e.target.closest('.inv-switch button');
+  if (sw) { S.view = sw.dataset.view; save(); sfx.click(); renderInv(true); return; }
+  const card = e.target.closest('.suspect-card');
+  if (card && screen === 'accuse' && $('#accuse-verdict').hidden) { askAccuse(+card.dataset.i); return; }
+  const tile = e.target.closest('.tile');
+  if (tile) { const i = +tile.dataset.i; moveTile(i, S.reportAnswer.includes(i) ? 'pool' : 'answer'); return; }
+  if (e.target.closest('.btn-restart')) { restart(); return; }
+  if (e.target.closest('.btn-title')) { go('title'); return; }
+  if (e.target.closest('.btn-mute')) { setMuted(!muted); sfx.click(); if (!muted) startRainSound(); return; }
+  if (e.target.closest('.modal-close')) { closeModals(); return; }
+  if (e.target.classList.contains('modal')) closeModals();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModals();
+  if (screen === 'story' && (e.key === 'Enter' || e.key === ' ') && !e.target.closest('input, textarea, button')) { e.preventDefault(); storyNext(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('tile')) { e.preventDefault(); e.target.click(); }
+});
+
+$('#btn-start').onclick = startNew;
+$('#btn-resume').onclick = () => { audio(); startRainSound(); go(S.screen); };
+$('#vn-skip').onclick = e => { e.stopPropagation(); if (typing) typing.finish(); go('inv'); };
+$('#btn-obj').onclick = objection;
+$('#btn-clear').onclick = () => { sfx.deselect(); clearSel(); };
+$('#btn-hint').onclick = useLens;
+$('#btn-accuse').onclick = () => go('accuse');
+$('#btn-home').onclick = () => go('title');
+$('#accuse-yes').onclick = confirmAccuse;
+$('#accuse-no').onclick = () => { pendingAccuse = null; $('#accuse-confirm').hidden = true; $$('.suspect-card').forEach(el => el.classList.remove('chosen')); sfx.deselect(); };
+$('#accuse-back').onclick = () => go('inv');
+$('#accuse-next').onclick = () => { setupReport(); go('report'); };
+$('#rep-check').onclick = checkReport;
+$('#rep-reset').onclick = () => { setupReport(); $('#rep-msg').textContent = ''; sfx.whoosh(); renderReport(); };
+$('#btn-gloss').onclick = () => {
+  const g = C.glossary || {};
+  $('#gloss-list').innerHTML = Object.keys(g).map(k => `<li><b>${esc(k)}</b><span>${esc(g[k])}</span></li>`).join('') || '<li>등록된 단어가 없습니다.</li>';
+  $('#m-gloss').hidden = false; sfx.pop();
+};
+$('#btn-load').onclick = () => { $('#load-text').value = JSON.stringify(C, null, 2); $('#load-err').textContent = ''; $('#m-load').hidden = false; };
+$('#load-file').onchange = e => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { $('#load-text').value = String(r.result || ''); };
+  r.readAsText(f);
+};
+$('#load-go').onclick = () => {
+  let c;
+  try { c = JSON.parse($('#load-text').value); }
+  catch (err) { $('#load-err').textContent = 'JSON 형식이 올바르지 않습니다. 쉼표, 따옴표, 괄호를 확인하세요.\n(' + err.message + ')'; return; }
+  const errs = validateCase(c);
+  if (errs.length) { $('#load-err').textContent = errs.slice(0, 6).join('\n'); return; }
+  c.glossary = c.glossary || {}; c.traps = c.traps || [];
+  store.set(KEY.custom, c);
+  loadCase(c);
+  toast('새 사건을 불러왔습니다: ' + c.title);
+};
+$('#load-sample').onclick = () => { store.del(KEY.custom); loadCase(CASE); toast('샘플 사건으로 되돌렸습니다.'); };
+
+/* 드래그 앤 드롭 (PC) */
+let dragI = null;
+document.addEventListener('dragstart', e => {
+  const t = e.target.closest && e.target.closest('.tile');
+  if (!t) return;
+  dragI = +t.dataset.i; t.classList.add('dragging');
+  try { e.dataTransfer.setData('text/plain', String(dragI)); e.dataTransfer.effectAllowed = 'move'; } catch (err) {}
+});
+document.addEventListener('dragend', () => { dragI = null; $$('.tile.dragging').forEach(t => t.classList.remove('dragging')); $$('.zone').forEach(z => z.classList.remove('over')); });
+$$('.zone').forEach(z => {
+  z.addEventListener('dragover', e => { if (dragI == null) return; e.preventDefault(); z.classList.add('over'); });
+  z.addEventListener('dragleave', () => z.classList.remove('over'));
+  z.addEventListener('drop', e => {
+    e.preventDefault(); z.classList.remove('over');
+    if (dragI == null) return;
+    const before = e.target.closest('.tile');
+    const beforeI = before && +before.dataset.i !== dragI ? +before.dataset.i : null;
+    moveTile(dragI, z.dataset.zone, beforeI);
+  });
+});
+
+/* 시간 흐름: 조사·지목·보고서 화면에서만 */
+setInterval(() => {
+  if (!S || !RUNNING.includes(screen) || document.hidden) return;
+  S.elapsed++;
+  $('#hud-time').textContent = fmt(S.elapsed);
+  if (S.elapsed % 5 === 0) save();
+}, 1000);
+
+/* ===== 처음 실행 ===== */
+(function init() {
+  const custom = store.get(KEY.custom);
+  C = custom && !validateCase(custom).length ? custom : CASE;
+  C.glossary = C.glossary || {}; C.traps = C.traps || [];
+  IDX = buildIndex(C);
+  const p = store.get(KEY.prog);
+  if (p && p.caseTitle === C.title) S = Object.assign(newState(p.team), p);
+  FX.init(); Rain.init();
+  show('title');
+})();
+</script>
+
+</body>
+</html>
